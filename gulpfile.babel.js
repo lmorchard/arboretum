@@ -12,26 +12,26 @@ import gulpif from 'gulp-if';
 
 const DEBUG = (process.env.NODE_ENV === 'development');
 
-const vendorModules = ['react', 'react-dom'];
+const vendorModules = [
+  'react', 'react-dom', 'redux', 'react-redux', 'immutable'
+];
 
 gulp.task('build', [
-  'stylus', 'assets',
-  'browserify-vendor',
-  'browserify-app'
+  'stylus', 'assets', 'browserify-vendor', 'browserify-app'
 ]);
 
 gulp.task('browserify-vendor', () => {
   return commonBrowserify('vendor.js', browserify({
-      debug: DEBUG
-    }).require(vendorModules));
+    debug: DEBUG
+  }).require(vendorModules));
 });
 
 gulp.task('browserify-app', () => {
   return commonBrowserify('index.js', browserify({
-      entries: ['./src/index.js'],
-      debug: DEBUG,
-      fullPaths: true
-    }).external(vendorModules));
+    entries: ['./src/index.js'],
+    debug: DEBUG,
+    fullPaths: true
+  }).external(vendorModules));
 });
 
 function commonBrowserify(sourceName, b) {
