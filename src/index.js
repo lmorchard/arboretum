@@ -47,25 +47,16 @@ const OutlineNode = React.createClass({
     );
   },
   handleDragStart(ev) {
-    this.setState({ dragging: true });
-    ev.dataTransfer.setData('text/plain', JSON.stringify({
-      index: this.props.index,
-      node: this.props.node
-    }));
+    ev.dataTransfer.setData('text/plain', JSON.stringify(this.props.node));
     ev.stopPropagation();
+    this.setState({ dragging: true });
   },
   handleDragEnter(ev) {
-    /*
-    if (ev.target == ReactDOM.findDOMNode(this)) {
-      ev.dropEffect = 'none';
-      return;
-    }
-    */
-    ev.dropEffect = 'move';
-    this.setState({ isDestination: true });
-    console.log('DRAG ENTER', this.props.node.title);
+    // TODO: Forbid drop onto self.
     ev.stopPropagation();
     ev.preventDefault();
+    ev.dropEffect = 'move';
+    this.setState({ isDestination: true });
   },
   handleDragOver(ev) {
     // TODO: update drop location preview feedback
@@ -73,32 +64,59 @@ const OutlineNode = React.createClass({
     ev.preventDefault();
   },
   handleDragLeave(ev) {
-    this.setState({ isDestination: false });
-    console.log('DRAG LEAVE', this.props.node.title);
     ev.stopPropagation();
     ev.preventDefault();
+    this.setState({ isDestination: false });
   },
   handleDragEnd(ev) {
-    this.setState({ dragging: false });
-    console.log("DRAG END", this.props.node.title, ev.dataTransfer.getData('text'));
     ev.stopPropagation();
     ev.preventDefault();
+    this.setState({ dragging: false });
+    this.props.removeNode();
   },
   // TODO: Accept drops from outside the browser...
   handleDrop(ev) {
-    this.setState({ isDestination: false });
-    console.log('DROP', this.props.node.title, ev.dataTransfer.getData('text'));
+    // TODO: Forbid drop onto self.
     ev.stopPropagation();
     ev.preventDefault();
+    this.setState({ isDestination: false });
+    var node = JSON.parse(ev.dataTransfer.getData('text'));
+    this.props.insertNodeAfter(node);
   }
 });
 
 const Outline = React.createClass({
+  getInitialState() {
+    return { nodes: this.props.nodes };
+  },
+  removeNode(index) {
+    console.log("REMOVE NODE", index);
+    let nodes = this.state.nodes;
+    nodes.splice(index, 1);
+    this.setState({ nodes: nodes });
+  },
+  insertNodeBefore(index, node) {
+    console.log("INSERT NODE BEFORE", index);
+    let nodes = this.state.nodes;
+    nodes.splice(index, 0, node);
+    this.setState({ nodes: nodes });
+  },
+  insertNodeAfter(index, node) {
+    console.log("INSERT NODE AFTER", index);
+    let nodes = this.state.nodes;
+    nodes.splice(index + 1, 0, node);
+    this.setState({ nodes: nodes });
+  },
   render() {
     return (
       <ul className="outline">
-        {this.props.nodes.map((node, index) => (
-          <OutlineNode key={index} index={index} node={node} />
+        {this.state.nodes.map((node, index) => (
+          <OutlineNode
+            node={node}
+            key={index} index={index}
+            removeNode={this.removeNode.bind(this, index)}
+            insertNodeBefore={this.insertNodeBefore.bind(this, index)}
+            insertNodeAfter={this.insertNodeAfter.bind(this, index)} />
         ))}
       </ul>
     );
