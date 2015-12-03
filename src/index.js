@@ -14,6 +14,9 @@ const OUTLINE_DATA = [
   {title: "gamma"}
 ];
 
+const OutlineStore = {
+};
+
 const OutlineNode = React.createClass({
   getInitialState() {
     return {
@@ -42,12 +45,15 @@ const OutlineNode = React.createClass({
           onDrop={this.handleDrop}>
         <span className="title" style={titleStyle}>{this.props.node.title}</span>
         {(!this.props.node.children) ? '' :
-          (<Outline nodes={this.props.node.children} />)}
+          (<OutlineTree path={this.props.path} nodes={this.props.node.children} />)}
       </li>
     );
   },
   handleDragStart(ev) {
-    ev.dataTransfer.setData('text/plain', JSON.stringify(this.props.node));
+    ev.dataTransfer.setData('text/plain', JSON.stringify({
+      path: this.props.path,
+      node: this.props.node
+    }));
     ev.stopPropagation();
     this.setState({ dragging: true });
   },
@@ -72,7 +78,7 @@ const OutlineNode = React.createClass({
     ev.stopPropagation();
     ev.preventDefault();
     this.setState({ dragging: false });
-    this.props.removeNode();
+    // this.props.removeNode();
   },
   // TODO: Accept drops from outside the browser...
   handleDrop(ev) {
@@ -80,14 +86,18 @@ const OutlineNode = React.createClass({
     ev.stopPropagation();
     ev.preventDefault();
     this.setState({ isDestination: false });
-    var node = JSON.parse(ev.dataTransfer.getData('text'));
-    this.props.insertNodeAfter(node);
+    var data = JSON.parse(ev.dataTransfer.getData('text'));
+    console.log("MOVE FROM", data.path, "TO", this.props.path);
+    // this.props.insertNodeAfter(node);
   }
 });
 
-const Outline = React.createClass({
+const OutlineTree = React.createClass({
   getInitialState() {
-    return { nodes: this.props.nodes };
+    return {
+      path: this.props.path || [],
+      nodes: this.props.nodes
+    };
   },
   removeNode(index) {
     console.log("REMOVE NODE", index);
@@ -111,9 +121,9 @@ const Outline = React.createClass({
     return (
       <ul className="outline">
         {this.state.nodes.map((node, index) => (
-          <OutlineNode
-            node={node}
+          <OutlineNode node={node}
             key={index} index={index}
+            path={this.state.path.concat([index])}
             removeNode={this.removeNode.bind(this, index)}
             insertNodeBefore={this.insertNodeBefore.bind(this, index)}
             insertNodeAfter={this.insertNodeAfter.bind(this, index)} />
@@ -123,16 +133,16 @@ const Outline = React.createClass({
   }
 });
 
-const App = React.createClass({
+const Outline = React.createClass({
   getInitialState() {
     return { nodes: this.props.nodes }
   },
   render() {
-    return ( <Outline nodes={this.state.nodes} /> );
+    return ( <OutlineTree nodes={this.state.nodes} /> );
   }
 });
 
 ReactDOM.render(
-  <App nodes={OUTLINE_DATA} />,
+  <Outline nodes={OUTLINE_DATA} />,
   document.getElementById('app')
 );
