@@ -30,7 +30,7 @@ gulp.task('browserify-app', () => {
   return commonBrowserify('index.js', browserify({
     entries: ['./src/index.js'],
     debug: DEBUG,
-    fullPaths: true
+    fullPaths: DEBUG
   }).external(vendorModules));
 });
 
