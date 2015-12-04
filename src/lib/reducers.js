@@ -3,7 +3,7 @@ import Immutable from 'immutable';
 
 import * as actions from './actions';
 
-function nodes(state=[], action) {
+export function nodes(state=[], action) {
   switch (action.type) {
     case actions.SET_NODE_ATTRIBUTE:
       return nodes_setNodeAttribute(state, action);
@@ -25,6 +25,7 @@ function nodes_setNodeAttribute(state, action) {
 }
 
 function nodes_insertNode(state, action) {
+  console.log("INSERT", action);
   const { node, position } = action;
   const toPath = action.toPath.split('.');
 
@@ -37,7 +38,7 @@ function nodes_insertNode(state, action) {
   } else {
     // Insert node before or after toPath, depending on action position
     const index = parseInt(toPath.pop()) +
-                  (position == actions.MovePositions.BEFORE) ? 0 : 1;
+                  ((position == actions.MovePositions.BEFORE) ? 0 : 1);
     state = state.updateIn(toPath, nodes => nodes.splice(index, 0, node));
   }
   return state;
@@ -51,6 +52,8 @@ function nodes_deleteNode(state, action) {
     return state.splice(index, 1);
   }
   path.pop(); // Ignore 'children'
+  // If this node is the parent's only child, omit the children list
+  // altogether. Otherwise, just splice out the node.
   return state.updateIn(path, parent =>
     parent.get('children').size <= 1 ?
       parent.delete('children') :

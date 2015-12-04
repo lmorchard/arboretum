@@ -38,7 +38,7 @@ export const OutlineNode = React.createClass({
         '1px solid #ccc' : '1px solid transparent',
       opacity: (this.state.dragging) ? 0.5 : 1
     };
-    const titleStyle = {};
+    const titleStyle = { marginLeft: '0.5em' };
     const buttonStyle = { fontFamily: 'monospace', margin: "0 0.25em" };
     return (
       <li className="outline-node"
@@ -51,18 +51,18 @@ export const OutlineNode = React.createClass({
           onDragEnd={this.onDragEnd}
           onDrop={this.onDrop.bind(this, dispatch)}>
 
-        {node.children && node.children.length > 0 &&
-          <button style={buttonStyle}
-                  onClick={this.onToggleCollapsed.bind(this, dispatch)}>
-            {node.collapsed ? '+' : '-'}
-          </button>}
+        <button style={buttonStyle}
+                disabled={!node.children}
+                onClick={this.onToggleCollapsed.bind(this, dispatch)}>
+          {!node.children ? 'o' : node.collapsed ? '+' : '-'}
+        </button>
 
         <button style={buttonStyle}
                 onClick={this.onDelete.bind(this, dispatch)}>X</button>
 
         <span className="title" style={titleStyle}>{node.title}</span>
 
-        {!node.collapsed && node.children && node.children.length > 0 &&
+        {!node.collapsed && node.children &&
           <OutlineTree dispatch={dispatch}
                        path={path + '.children.'} nodes={node.children} />}
 
