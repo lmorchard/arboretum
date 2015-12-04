@@ -25,7 +25,6 @@ function nodes_setNodeAttribute(state, action) {
 }
 
 function nodes_insertNode(state, action) {
-  console.log("INSERT", action);
   const { node, position } = action;
   const toPath = action.toPath.split('.');
 
