@@ -8,7 +8,7 @@ import { createStore, applyMiddleware } from 'redux';
 
 import * as actions from './lib/actions';
 import reducers from './lib/reducers';
-import { OutlineApp } from './lib/components';
+import { Outline } from './lib/components';
 
 const logger = store => next => action => {
   console.log('dispatching', action)
@@ -38,7 +38,7 @@ window.store = store;
 
 ReactDOM.render(
   <Provider store={store}>
-    <OutlineApp />
+    <Outline />
   </Provider>,
   document.getElementById('app')
 );

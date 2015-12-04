@@ -4,51 +4,38 @@ import { connect } from 'react-redux';
 
 import * as actions from './actions';
 
-export const Outline = React.createClass({
-  render() {
-    const { dispatch, nodes } = this.props;
-    return (<OutlineTree dispatch={dispatch} nodes={nodes} path="" />);
-  }
-});
-
-export const OutlineApp = connect(state => {
+export const Outline = connect(state => {
   return { nodes: state.nodes.toJS() };
-})(Outline);
+})(({ dispatch, nodes }) =>
+  <OutlineTree dispatch={dispatch} nodes={nodes} path="" />
+);
 
-export default OutlineApp;
-
-export const OutlineTree = React.createClass({
-  render() {
-    const { dispatch, nodes, path } = this.props;
-    return (
-      <ul className="outline">
-        {nodes.map((node, index) => (
-          <OutlineNode dispatch={dispatch} node={node}
-            key={index} index={index} path={path + index} />
-        ))}
-      </ul>
-    );
-  }
-});
+export const OutlineTree = ({ dispatch, nodes, path }) =>
+  <ul className="outline">
+    {nodes.map((node, index) =>
+      <OutlineNode dispatch={dispatch} node={node}
+        key={index} index={index} path={path + index} />
+    )}
+  </ul>;
 
 export const OutlineNode = React.createClass({
   getInitialState() {
     return {
       dragging: false,
-      destination: null
+      positionPreview: null
     };
   },
   render() {
     const { dispatch, node, path } = this.props;
-    const { destination } = this.state;
+    const { positionPreview } = this.state;
     const style = {
       padding: '0.125em',
-      backgroundColor: destination == actions.MovePositions.ADOPT ?
-        '#d33' : 'transparent',
-      borderTop: destination == actions.MovePositions.BEFORE ?
-        '1px solid #000' : '1px solid transparent',
-      borderBottom: destination == actions.MovePositions.AFTER ?
-        '1px solid #000' : '1px solid transparent',
+      backgroundColor: positionPreview == actions.MovePositions.ADOPT ?
+        '#ccc' : 'transparent',
+      borderTop: positionPreview == actions.MovePositions.BEFORE ?
+        '1px solid #ccc' : '1px solid transparent',
+      borderBottom: positionPreview == actions.MovePositions.AFTER ?
+        '1px solid #ccc' : '1px solid transparent',
       opacity: (this.state.dragging) ? 0.5 : 1
     };
     const titleStyle = {
@@ -96,12 +83,12 @@ export const OutlineNode = React.createClass({
       const pos = (ev.clientX > (rect.left + 50)) ? 'ADOPT' :
                   (ev.clientY < (rect.top + rect.height / 2)) ? 'BEFORE' :
                   'AFTER';
-      this.setState({ destination: actions.MovePositions[pos] });
+      this.setState({ positionPreview: actions.MovePositions[pos] });
     }
     return stahp(ev);
   },
   onDragLeave(ev) {
-    this.setState({ destination: null });
+    this.setState({ positionPreview: null });
     return stahp(ev);
   },
   onDragEnd(ev) {
@@ -109,14 +96,14 @@ export const OutlineNode = React.createClass({
     return stahp(ev);
   },
   onDrop(dispatch, ev) {
-    // TODO: Accept drops from outside the browser...
+    // TODO: Accept drops from outside the browser.
     const { path: draggedPath } = getDragMeta(ev);
     const data = JSON.parse(ev.dataTransfer.getData('text'));
     if (this.props.path.indexOf(draggedPath) !== 0) {
       dispatch(actions.moveNode(data.path, this.props.path,
-                                this.state.destination));
+                                this.state.positionPreview));
     }
-    this.setState({ destination: null });
+    this.setState({ positionPreview: null });
     return stahp(ev);
   },
   onDelete(dispatch, ev) {
