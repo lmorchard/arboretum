@@ -4,7 +4,8 @@
   "description": "An outliner",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build-windows": "set NODE_ENV=development&&gulp"
   },
   "author": "Les Orchard <me@lmorchard.com>",
   "license": "ISC",
