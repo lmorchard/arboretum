@@ -38,8 +38,8 @@ export const OutlineNode = React.createClass({
         '1px solid #ccc' : '1px solid transparent',
       opacity: (this.state.dragging) ? 0.5 : 1
     };
-    const titleStyle = {
-    };
+    const titleStyle = {};
+    const buttonStyle = { fontFamily: 'monospace', margin: "0 0.25em" };
     return (
       <li className="outline-node"
           style={style}
@@ -50,14 +50,22 @@ export const OutlineNode = React.createClass({
           onDragLeave={this.onDragLeave}
           onDragEnd={this.onDragEnd}
           onDrop={this.onDrop.bind(this, dispatch)}>
-        <button style={{ margin: "0 0.5em" }}
+
+        {node.children && node.children.length > 0 &&
+          <button style={buttonStyle}
+                  onClick={this.onToggleCollapsed.bind(this, dispatch)}>
+            {node.collapsed ? '+' : '-'}
+          </button>}
+
+        <button style={buttonStyle}
                 onClick={this.onDelete.bind(this, dispatch)}>X</button>
-        <span className="title"
-              style={titleStyle}>{node.title}</span>
-        {(!node.children) ? null : (
+
+        <span className="title" style={titleStyle}>{node.title}</span>
+
+        {!node.collapsed && node.children && node.children.length > 0 &&
           <OutlineTree dispatch={dispatch}
-                       path={path + '.children.'} nodes={node.children} />
-        )}
+                       path={path + '.children.'} nodes={node.children} />}
+
       </li>
     );
   },
@@ -66,8 +74,8 @@ export const OutlineNode = React.createClass({
     setDragMeta(ev, {path});
     ev.dataTransfer.effectAllowed = 'move';
     ev.dataTransfer.setData('text/plain', JSON.stringify({path, node}));
-    this.setState({ dragging: true });
     ev.stopPropagation();
+    this.setState({ dragging: true });
   },
   onDragEnter(ev) {
     const { path: draggedPath } = getDragMeta(ev);
@@ -78,8 +86,11 @@ export const OutlineNode = React.createClass({
   },
   onDragOver(ev) {
     const { path: draggedPath } = getDragMeta(ev);
+    // Ensure the drop target is not the dragged node or a child
     if (this.props.path.indexOf(draggedPath) !== 0) {
       const rect = ev.target.getBoundingClientRect();
+      // TODO: Get rid of the magic number here for defining the zone width
+      // that defines whether the drop will be an adoption or before/after
       const pos = (ev.clientX > (rect.left + 50)) ? 'ADOPT' :
                   (ev.clientY < (rect.top + rect.height / 2)) ? 'BEFORE' :
                   'AFTER';
@@ -99,6 +110,7 @@ export const OutlineNode = React.createClass({
     // TODO: Accept drops from outside the browser.
     const { path: draggedPath } = getDragMeta(ev);
     const data = JSON.parse(ev.dataTransfer.getData('text'));
+    // Ensure the drop target is not the dragged node or a child
     if (this.props.path.indexOf(draggedPath) !== 0) {
       dispatch(actions.moveNode(data.path, this.props.path,
                                 this.state.positionPreview));
@@ -108,6 +120,11 @@ export const OutlineNode = React.createClass({
   },
   onDelete(dispatch, ev) {
     dispatch(actions.deleteNode(this.props.path))
+    return stahp(ev);
+  },
+  onToggleCollapsed(dispatch, ev) {
+    const { node, path } = this.props;
+    dispatch(actions.setNodeAttribute(path, 'collapsed', !node.collapsed ));
     return stahp(ev);
   }
 });
