@@ -104,6 +104,7 @@ export const OutlineNode = React.createClass({
                    type="text"
                    size="50"
                    value={editorValue}
+                   onKeyUp={this.onEditorKeyUp}
                    onBlur={this.onEditorBlur}
                    onChange={this.onEditorChange} />
             :
@@ -124,17 +125,44 @@ export const OutlineNode = React.createClass({
     this.setState({ editing: isEditing });
     // HACK: Track editing on the root state, so we can disable all dragging
     this.props.rootState.set('editing', isEditing);
+    if (!isEditing) {
+      this.props.rootState.set('selection', null);
+    }
   },
   onSelectionClick(ev) {
     this.props.rootState.set('selection', this.props.path);
   },
   onTitleDoubleClick(ev) {
-    this.setEditing(true);
+    this.editorStart();
+  },
+  onEditorKeyUp(ev) {
+    switch (ev.key) {
+      case 'Escape':
+        stahp(ev);
+        return this.editorCancel();
+      case 'Enter':
+        stahp(ev);
+        return this.editorCommit();
+      case 'ArrowUp':
+        break;
+      case 'ArrowDown':
+        break;
+    }
   },
   onEditorChange(ev) {
     this.setState({ editorValue: ev.target.value });
   },
   onEditorBlur(ev) {
+    this.editorCommit();
+  },
+  editorStart() {
+    this.setState({ editorValue: this.props.node.title });
+    this.setEditing(true);
+  },
+  editorCancel() {
+    this.setEditing(false);
+  },
+  editorCommit() {
     const { dispatch, node, path } = this.props;
     if (this.state.editorValue !== this.props.node.title) {
       dispatch(actions.setNodeAttribute(
