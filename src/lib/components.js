@@ -8,26 +8,32 @@ export const Outline = connect(state => {
   return { nodes: state.nodes.toJS() };
 })(React.createClass({
   getInitialState() {
-    return { selected: null };
+    return {
+      selected: null,
+      editing: false
+    };
   },
   render() {
     const { dispatch, nodes } = this.props;
-    const selection = {
-      set: (path) => this.setState({ selected: path }),
-      get: () => this.state.selected,
-      clear: () => this.setState({ selected: null })
+    const rootState = {
+      get: (name) => this.state[name],
+      set: (name, value) => {
+        const data = {};
+        data[name] = value;
+        this.setState(data);
+      }
     };
     return (
       <OutlineTree path="" dispatch={dispatch} nodes={nodes}
-                   selection={selection} />
+                   rootState={rootState} />
     );
-  },
+  }
 }));
 
-export const OutlineTree = ({ dispatch, nodes, selection, path }) =>
+export const OutlineTree = ({ dispatch, nodes, rootState, path }) =>
   <ul className="outline">
     {nodes.map((node, index) =>
-      <OutlineNode dispatch={dispatch} selection={selection}
+      <OutlineNode dispatch={dispatch} rootState={rootState}
                    node={node} key={index} index={index}
                    path={path + index} />
     )}
@@ -43,12 +49,13 @@ export const OutlineNode = React.createClass({
     };
   },
   render() {
-    const { dispatch, node, path, selection } = this.props;
+    const { dispatch, node, path, rootState } = this.props;
     const { positionPreview, editing, editorValue, dragging } = this.state;
 
-    const selected = selection.get() === path;
+    const selected = rootState.get('selection') === path;
 
     const style = {
+      listStyleType: 'none',
       padding: '0.125em',
       backgroundColor: positionPreview == actions.MovePositions.ADOPT ?
         '#ccc' : 'transparent',
@@ -67,6 +74,8 @@ export const OutlineNode = React.createClass({
         '1px dashed #ccc' : '1px solid transparent'
     };
     const editorStyle = {
+      display: 'block',
+      width: '75%',
       fontFamily: 'sans-serif',
       fontSize: '14px',
       margin: ' 0 0.25em 0 0',
@@ -75,13 +84,21 @@ export const OutlineNode = React.createClass({
     };
     const buttonStyle = {
       fontFamily: 'monospace',
-      margin: "0 0.25em"
+      margin: '0 0.25em'
     };
+
+    // HACK: Disable dragging when any node is edited.
+    // On Firefox, input fields don't receive mouse clicks
+    // when a parent has draggable=true
+    //
+    // https://bugzilla.mozilla.org/show_bug.cgi?id=800050
+    // https://bugzilla.mozilla.org/show_bug.cgi?id=1189486
+    const draggable = !rootState.get('editing');
 
     return (
       <li className="outline-node"
           style={style}
-          draggable={true}
+          draggable={draggable}
           onDragStart={this.onDragStart}
           onDragEnter={this.onDragEnter}
           onDragOver={this.onDragOver}
@@ -113,26 +130,33 @@ export const OutlineNode = React.createClass({
                 onDoubleClick={this.onTitleDoubleClick}>{node.title}</span>}
 
         {!node.collapsed && node.children &&
-          <OutlineTree dispatch={dispatch} selection={selection}
+          <OutlineTree dispatch={dispatch} rootState={rootState}
                        path={path + '.children.'} nodes={node.children} />}
 
       </li>
     );
   },
+  setEditing(isEditing) {
+    this.setState({ editing: isEditing });
+    // HACK: Track editing on the root state, so we can disable all dragging
+    this.props.rootState.set('editing', isEditing);
+  },
   onSelectionClick(ev) {
-    this.props.selection.set(this.props.path);
+    this.props.rootState.set('selection', this.props.path);
   },
   onTitleDoubleClick(ev) {
-    this.setState({ editing: true });
+    this.setEditing(true);
   },
   onEditorChange(ev) {
     this.setState({ editorValue: ev.target.value });
   },
   onEditorBlur(ev) {
     const { dispatch, node, path } = this.props;
-    dispatch(actions.setNodeAttribute(path, 'title',
-                                      this.state.editorValue));
-    this.setState({ editing: false });
+    if (this.state.editorValue !== this.props.node.title) {
+      dispatch(actions.setNodeAttribute(
+        path, 'title', this.state.editorValue));
+    }
+    this.setEditing(false);
   },
   onDragStart(ev) {
     const { path, node } = this.props;
