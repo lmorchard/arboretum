@@ -1,6 +1,7 @@
 import React, { Component, PropTypes } from 'react';
 import ReactDOM from 'react-dom';
 import { connect } from 'react-redux';
+import classNames from 'classnames';
 
 import * as actions from './actions';
 
@@ -52,41 +53,6 @@ export const OutlineNode = React.createClass({
     const { dispatch, node, path, rootState } = this.props;
     const { positionPreview, editing, editorValue, dragging } = this.state;
 
-    const selected = rootState.get('selection') === path;
-
-    const style = {
-      listStyleType: 'none',
-      padding: '0.125em',
-      backgroundColor: positionPreview == actions.MovePositions.ADOPT ?
-        '#ccc' : 'transparent',
-      borderTop: positionPreview == actions.MovePositions.BEFORE ?
-        '1px solid #ccc' : '1px solid transparent',
-      borderBottom: positionPreview == actions.MovePositions.AFTER ?
-        '1px solid #ccc' : '1px solid transparent',
-      opacity: dragging ? 0.5 : 1
-    };
-    const titleStyle = {
-      fontFamily: 'sans-serif',
-      fontSize: '14px',
-      margin: ' 0 0.25em 0 0',
-      padding: '0.25em 0.25em',
-      border: selected ?
-        '1px dashed #ccc' : '1px solid transparent'
-    };
-    const editorStyle = {
-      display: 'block',
-      width: '75%',
-      fontFamily: 'sans-serif',
-      fontSize: '14px',
-      margin: ' 0 0.25em 0 0',
-      padding: '0.25em 0.25em',
-      border: '1px solid #ccc'
-    };
-    const buttonStyle = {
-      fontFamily: 'monospace',
-      margin: '0 0.25em'
-    };
-
     // HACK: Disable dragging when any node is edited.
     // On Firefox, input fields don't receive mouse clicks
     // when a parent has draggable=true
@@ -94,10 +60,23 @@ export const OutlineNode = React.createClass({
     // https://bugzilla.mozilla.org/show_bug.cgi?id=800050
     // https://bugzilla.mozilla.org/show_bug.cgi?id=1189486
     const draggable = !rootState.get('editing');
+    const selected = rootState.get('selection') === path;
 
     return (
-      <li className="outline-node"
-          style={style}
+      <li className={classNames({
+            'outline-node': true,
+            'editing': editing,
+            'dragging': dragging,
+            'selected': selected,
+            'has-children': !!node.children,
+            'collapsed': !!node.collapsed,
+            'position-preview-adopt':
+              positionPreview == actions.MovePositions.ADOPT,
+            'position-preview-before':
+              positionPreview == actions.MovePositions.BEFORE,
+            'position-preview-after':
+              positionPreview == actions.MovePositions.AFTER,
+          })}
           draggable={draggable}
           onDragStart={this.onDragStart}
           onDragEnter={this.onDragEnter}
@@ -106,28 +85,33 @@ export const OutlineNode = React.createClass({
           onDragEnd={this.onDragEnd}
           onDrop={this.onDrop}>
 
-        <button style={buttonStyle}
-                disabled={!node.children}
-                onClick={this.onToggleCollapsed}>
-          {!node.children ? 'o' : node.collapsed ? '+' : '-'}
-        </button>
+        <div className="content">
 
-        <button style={buttonStyle} onClick={this.onDelete}>X</button>
+          <button className="collapse"
+                  disabled={!node.children}
+                  onClick={this.onToggleCollapsed}>
+            &nbsp;
+          </button>
 
-        {selected && editing ?
-          <input className="editor"
-                 style={editorStyle}
-                 autoFocus={true}
-                 ref={moveCursorToEnd}
-                 type="text"
-                 size="50"
-                 value={editorValue}
-                 onBlur={this.onEditorBlur}
-                 onChange={this.onEditorChange} />
-          :
-          <span className="title" style={titleStyle}
-                onClick={this.onSelectionClick}
-                onDoubleClick={this.onTitleDoubleClick}>{node.title}</span>}
+          {!selected ? null :
+            <button className="delete"
+                    onClick={this.onDelete}>X</button>}
+
+          {selected && editing ?
+            <input className="editor"
+                   autoFocus={true}
+                   ref={moveCursorToEnd}
+                   type="text"
+                   size="50"
+                   value={editorValue}
+                   onBlur={this.onEditorBlur}
+                   onChange={this.onEditorChange} />
+            :
+            <span className="title"
+                  onClick={this.onSelectionClick}
+                  onDoubleClick={this.onTitleDoubleClick}>{node.title}</span>}
+
+        </div>
 
         {!node.collapsed && node.children &&
           <OutlineTree dispatch={dispatch} rootState={rootState}

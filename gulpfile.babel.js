@@ -13,7 +13,7 @@ import gulpif from 'gulp-if';
 const DEBUG = (process.env.NODE_ENV === 'development');
 
 const vendorModules = [
-  'react', 'react-dom', 'redux', 'react-redux', 'immutable'
+  'react', 'react-dom', 'redux', 'react-redux', 'immutable', 'classnames'
 ];
 
 gulp.task('build', [
