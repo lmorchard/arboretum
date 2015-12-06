@@ -17,7 +17,7 @@ const vendorModules = [
 ];
 
 gulp.task('build', [
-  'stylus', 'assets', 'browserify-vendor', 'browserify-app'
+  'stylus', 'assets', 'browserify-vendor', 'browserify-app', 'browserify-tests'
 ]);
 
 gulp.task('browserify-vendor', () => {
@@ -34,14 +34,22 @@ gulp.task('browserify-app', () => {
   }).external(vendorModules));
 });
 
-function commonBrowserify(sourceName, b) {
+gulp.task('browserify-tests', () => {
+  return commonBrowserify('index.js', browserify({
+    entries: ['./test/index.js'],
+    debug: DEBUG,
+    fullPaths: DEBUG
+  }).external(vendorModules), './dist-test');
+});
+
+function commonBrowserify(sourceName, b, dest='./dist') {
   return b
     .transform("babelify", {presets: ["es2015", "react"]})
     .bundle()
     .pipe(source(sourceName))
     .pipe(buffer())
     .pipe(gulpif(!DEBUG, uglify()))
-    .pipe(gulp.dest('./dist'))
+    .pipe(gulp.dest(dest))
     .pipe(connect.reload());
 }
 
@@ -72,6 +80,7 @@ gulp.task('connect', () => {
 
 gulp.task('watch', () => {
   gulp.watch('./src/**/*', ['browserify-app', 'stylus', 'assets']);
+  gulp.watch('./test/**/*', ['browserify-tests']);
   gulp.watch('./package.json', ['browserify-vendor']);
 });
 
