@@ -11,7 +11,7 @@ module.exports = function(config){
 
     autoWatch : true,
 
-    autoWatchBatchDelay: 3000, // Try not to race with gulp build
+    autoWatchBatchDelay: 1000, // Try not to race with gulp build
 
     frameworks: ['mocha', 'chai'],
 

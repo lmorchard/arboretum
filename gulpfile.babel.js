@@ -79,7 +79,7 @@ gulp.task('connect', () => {
 });
 
 gulp.task('watch', () => {
-  gulp.watch('./src/**/*', ['browserify-app', 'stylus', 'assets']);
+  gulp.watch('./src/**/*', ['browserify-app', 'browserify-tests', 'stylus', 'assets']);
   gulp.watch('./test/**/*', ['browserify-tests']);
   gulp.watch('./package.json', ['browserify-vendor']);
 });
