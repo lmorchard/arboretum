@@ -6,7 +6,8 @@ export const SET_NODE_ATTRIBUTE = 'SET_NODE_ATTRIBUTE';
 export const MovePositions = {
   BEFORE: 'BEFORE',
   AFTER: 'AFTER',
-  ADOPT: 'ADOPT'
+  ADOPT: 'ADOPT',
+  ADOPT_LAST: 'ADOPT_LAST'
 };
 
 export function setNodeAttribute(path, name, value) {

@@ -1,5 +1,5 @@
 import { combineReducers } from 'redux';
-import Immutable from 'immutable';
+import Immutable, { List } from 'immutable';
 
 import * as actions from './actions';
 
@@ -29,18 +29,24 @@ function nodes_insertNode(state, action) {
   const toPath = action.toPath.split('.');
 
   // Insert the node into the new position...
-  if (position == actions.MovePositions.ADOPT) {
+  if (position == actions.MovePositions.ADOPT ||
+      position == actions.MovePositions.ADOPT_LAST) {
     // Adopt the node into parent, creating the child list if necessary.
-    state = state.updateIn(toPath, parent => parent.has('children') ?
-        parent.update('children', children => children.unshift(node)) :
-        parent.set('children', Immutable.List([node])));
-  } else {
-    // Insert node before or after toPath, depending on action position
-    const index = parseInt(toPath.pop()) +
-                  ((position == actions.MovePositions.BEFORE) ? 0 : 1);
-    state = state.updateIn(toPath, nodes => nodes.splice(index, 0, node));
+    return state.updateIn(toPath, parent => {
+      if (!parent.has('children')) {
+        return parent.set('children', List([node]));
+      } else if (position === actions.MovePositions.ADOPT) {
+        return parent.update('children', children => children.unshift(node));
+      } else {
+        return parent.update('children', children => children.push(node));
+      }
+    });
   }
-  return state;
+
+  // Insert node before or after toPath, depending on action position
+  const index = parseInt(toPath.pop()) +
+                ((position == actions.MovePositions.BEFORE) ? 0 : 1);
+  return state.updateIn(toPath, nodes => nodes.splice(index, 0, node));
 }
 
 function nodes_deleteNode(state, action) {

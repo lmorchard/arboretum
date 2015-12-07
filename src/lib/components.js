@@ -20,21 +20,16 @@ export const Outline = connect(state => {
     const root = {
       getState: (name) => this.state[name],
       setState: (data) => this.setState(data),
-      selectPrevious: (path) => {
-        const newPath = getPreviousNodePath(nodes, path);
-        if (newPath) {
-          this.setState({ selection: newPath, editing: newPath });
-        }
-      },
-      selectNext: (path) => {
-        const newPath = getNextNodePath(nodes, path);
-        if (newPath) {
-          this.setState({ selection: newPath, editing: newPath });
-        }
-      }
+      getPreviousNodePath: (path) => getPreviousNodePath(nodes, path),
+      getNextNodePath: (path) => getNextNodePath(nodes, path),
+      select: (path, editing) => !path ? null :
+        this.setState({
+          selection: path,
+          editing: editing ? path : null
+        })
     };
     return (
-      <OutlineTree path="" dispatch={dispatch} nodes={nodes.toJS()} root={root} />
+      <OutlineTree path="" dispatch={dispatch} nodes={nodes} root={root} />
     );
   }
 }));
@@ -51,7 +46,7 @@ export const OutlineTree = ({ dispatch, nodes, root, path }) =>
 export const OutlineNode = React.createClass({
   getInitialState() {
     return {
-      editorValue: this.props.node.title,
+      editorValue: this.props.node.get('title'),
       dragging: false,
       positionPreview: null
     };
@@ -69,6 +64,8 @@ export const OutlineNode = React.createClass({
     const selected = root.getState('selection') === path;
     const editing = root.getState('editing') === path;
     const draggable = !editing;
+    const hasChildren = node.has('children');
+    const isCollapsed = !!node.get('collapsed');
 
     return (
       <li className={classNames({
@@ -76,8 +73,8 @@ export const OutlineNode = React.createClass({
             'editing': editing,
             'dragging': dragging,
             'selected': selected,
-            'has-children': !!node.children,
-            'collapsed': !!node.collapsed,
+            'has-children': hasChildren,
+            'collapsed': isCollapsed,
             'position-preview-adopt':
               positionPreview == actions.MovePositions.ADOPT,
             'position-preview-before':
@@ -96,7 +93,7 @@ export const OutlineNode = React.createClass({
         <div className="content">
 
           <button className="collapse"
-                  disabled={!node.children}
+                  disabled={!hasChildren}
                   onClick={this.onToggleCollapsed}>
             &nbsp;
           </button>
@@ -112,19 +109,20 @@ export const OutlineNode = React.createClass({
                    type="text"
                    size="50"
                    value={editorValue}
+                   onKeyDown={this.onEditorKeyDown}
                    onKeyUp={this.onEditorKeyUp}
                    onBlur={this.onEditorBlur}
                    onChange={this.onEditorChange} />
             :
             <span className="title"
                   onClick={this.onSelectionClick}
-                  onDoubleClick={this.onTitleDoubleClick}>{node.title}</span>}
+                  onDoubleClick={this.onTitleDoubleClick}>{node.get('title')}</span>}
 
         </div>
 
-        {!node.collapsed && node.children &&
+        {!isCollapsed && hasChildren &&
           <OutlineTree dispatch={dispatch} root={root}
-                       path={path + '.children.'} nodes={node.children} />}
+                       path={path + '.children.'} nodes={node.get('children')} />}
 
       </li>
     );
@@ -144,8 +142,34 @@ export const OutlineNode = React.createClass({
   onTitleDoubleClick(ev) {
     this.editorStart();
   },
+  onEditorKeyDown(ev) {
+    const { dispatch, root, path } = this.props;
+    switch (ev.key) {
+      case 'Tab':
+        if (ev.shiftKey) {
+          // On Shift-Tab, move the node to after its parent.
+          var parentPath = path.split('.').slice(0, -2).join('.');
+          if (parentPath) {
+            this.editorCommit();
+            dispatch(actions.moveNode(path, parentPath,
+                                      actions.MovePositions.AFTER));
+          }
+        } else {
+          // On Tab, adopt the node as last child of previous sibling.
+          var parts = path.split('.');
+          var index = parseInt(parts.pop());
+          if (index - 1 >= 0) {
+            var newPath = parts.concat([index - 1]).join('.');
+            this.editorCommit();
+            dispatch(actions.moveNode(path, newPath,
+                                      actions.MovePositions.ADOPT_LAST));
+          }
+        }
+        return stahp(ev);
+    }
+  },
   onEditorKeyUp(ev) {
-    const { root, path } = this.props;
+    const { dispatch, root, path } = this.props;
     switch (ev.key) {
       case 'Escape':
         stahp(ev);
@@ -154,10 +178,10 @@ export const OutlineNode = React.createClass({
         stahp(ev);
         return this.editorCommit();
       case 'ArrowUp':
-        root.selectPrevious(path);
+        root.select(root.getPreviousNodePath(path), true);
         return stahp(ev);
       case 'ArrowDown':
-        root.selectNext(path);
+        root.select(root.getNextNodePath(path), true);
         return stahp(ev);
     }
   },
@@ -168,7 +192,7 @@ export const OutlineNode = React.createClass({
     this.editorCommit();
   },
   editorStart() {
-    this.setState({ editorValue: this.props.node.title });
+    this.setState({ editorValue: this.props.node.get('title') });
     this.setEditing(true);
   },
   editorCancel() {
@@ -176,7 +200,7 @@ export const OutlineNode = React.createClass({
   },
   editorCommit() {
     const { dispatch, node, path } = this.props;
-    if (this.state.editorValue !== this.props.node.title) {
+    if (this.state.editorValue !== this.props.node.get('title')) {
       dispatch(actions.setNodeAttribute(
         path, 'title', this.state.editorValue));
     }
@@ -186,7 +210,7 @@ export const OutlineNode = React.createClass({
     const { path, node } = this.props;
     setDragMeta(ev, {path});
     ev.dataTransfer.effectAllowed = 'move';
-    ev.dataTransfer.setData('text/plain', JSON.stringify({path, node}));
+    ev.dataTransfer.setData('text/plain', JSON.stringify({ path }));
     ev.stopPropagation();
     this.setState({ dragging: true });
   },
@@ -239,7 +263,7 @@ export const OutlineNode = React.createClass({
   },
   onToggleCollapsed(ev) {
     const { dispatch, node, path } = this.props;
-    dispatch(actions.setNodeAttribute(path, 'collapsed', !node.collapsed ));
+    dispatch(actions.setNodeAttribute(path, 'collapsed', !node.get('collapsed') ));
     return stahp(ev);
   }
 });
