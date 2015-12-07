@@ -10,10 +10,7 @@ export const Outline = connect(state => {
   return { nodes: state.nodes };
 })(React.createClass({
   getInitialState() {
-    return {
-      selected: null,
-      editing: null
-    };
+    return { selected: null };
   },
   render() {
     const { dispatch, nodes } = this.props;
@@ -22,11 +19,8 @@ export const Outline = connect(state => {
       setState: (data) => this.setState(data),
       getPreviousNodePath: (path) => getPreviousNodePath(nodes, path),
       getNextNodePath: (path) => getNextNodePath(nodes, path),
-      select: (path, editing) => !path ? null :
-        this.setState({
-          selection: path,
-          editing: editing ? path : null
-        })
+      select: (path) => !path ? null : this.setState({ selection: path }),
+      deselect: () => this.setState({ selection: null })
     };
     return (
       <OutlineTree path="" dispatch={dispatch} nodes={nodes} root={root} />
@@ -38,7 +32,8 @@ export const OutlineTree = ({ dispatch, nodes, root, path }) =>
   <ul className="outline">
     {nodes.map((node, index) =>
       <OutlineNode dispatch={dispatch} root={root}
-                   node={node} key={index} index={index}
+                   node={node} siblings={nodes}
+                   key={index} index={index}
                    path={path + index} />
     )}
   </ul>;
@@ -51,6 +46,11 @@ export const OutlineNode = React.createClass({
       positionPreview: null
     };
   },
+  componentWillReceiveProps(nextProps) {
+    if (this.props.node != nextProps.node) {
+      this.setState({ editorValue: nextProps.node.get('title') });
+    }
+  },
   render() {
     const { dispatch, node, path, root } = this.props;
     const { positionPreview, editorValue, dragging } = this.state;
@@ -62,16 +62,17 @@ export const OutlineNode = React.createClass({
     // https://bugzilla.mozilla.org/show_bug.cgi?id=800050
     // https://bugzilla.mozilla.org/show_bug.cgi?id=1189486
     const selected = root.getState('selection') === path;
-    const editing = root.getState('editing') === path;
-    const draggable = !editing;
+    const draggable = !root.getState('selection');
     const hasChildren = node.has('children');
     const isCollapsed = !!node.get('collapsed');
+
+    const { title } = node.toJS();
 
     return (
       <li className={classNames({
             'outline-node': true,
-            'editing': editing,
             'dragging': dragging,
+            'editing': selected,
             'selected': selected,
             'has-children': hasChildren,
             'collapsed': isCollapsed,
@@ -102,7 +103,7 @@ export const OutlineNode = React.createClass({
             <button className="delete"
                     onClick={this.onDelete}>X</button>}
 
-          {selected && editing ?
+          {selected ?
             <input className="editor"
                    autoFocus={true}
                    ref={moveCursorToEnd}
@@ -115,8 +116,7 @@ export const OutlineNode = React.createClass({
                    onChange={this.onEditorChange} />
             :
             <span className="title"
-                  onClick={this.onSelectionClick}
-                  onDoubleClick={this.onTitleDoubleClick}>{node.get('title')}</span>}
+                  onClick={this.onSelectionClick}>{title}</span>}
 
         </div>
 
@@ -127,60 +127,73 @@ export const OutlineNode = React.createClass({
       </li>
     );
   },
-  setEditing(isEditing) {
-    const { root, path } = this.props;
-    if (isEditing) {
-      // HACK: Track editing on the root state, so we can disable all dragging
-      root.setState({ editing: path, selection: path });
-    } else {
-      root.setState({ editing: null, selection: null });
-    }
-  },
   onSelectionClick(ev) {
-    this.props.root.setState({ selection: this.props.path });
+    const { root, path } = this.props;
+    root.select(path);
   },
-  onTitleDoubleClick(ev) {
-    this.editorStart();
+  onDelete(ev) {
+    const { dispatch } = this.props;
+    dispatch(actions.deleteNode(this.props.path))
+    return stahp(ev);
+  },
+  onToggleCollapsed(ev) {
+    const { dispatch, node, path } = this.props;
+    dispatch(actions.setNodeAttribute(path, 'collapsed', !node.get('collapsed')));
+    return stahp(ev);
   },
   onEditorKeyDown(ev) {
-    const { dispatch, root, path } = this.props;
     switch (ev.key) {
       case 'Tab':
         if (ev.shiftKey) {
-          // On Shift-Tab, move the node to after its parent.
-          var parentPath = path.split('.').slice(0, -2).join('.');
-          if (parentPath) {
-            this.editorCommit();
-            dispatch(actions.moveNode(path, parentPath,
-                                      actions.MovePositions.AFTER));
-          }
+          return this.onEditorShiftTabKeyDown(ev);
         } else {
-          // On Tab, adopt the node as last child of previous sibling.
-          var parts = path.split('.');
-          var index = parseInt(parts.pop());
-          if (index - 1 >= 0) {
-            var newPath = parts.concat([index - 1]).join('.');
-            this.editorCommit();
-            dispatch(actions.moveNode(path, newPath,
-                                      actions.MovePositions.ADOPT_LAST));
-          }
+          return this.onEditorTabKeyDown(ev);
         }
-        return stahp(ev);
     }
+  },
+  onEditorShiftTabKeyDown(ev) {
+    const { dispatch, root, path } = this.props;
+    // On Shift-Tab, move the node to after its parent.
+    var parentPath = path.split('.').slice(0, -2).join('.');
+    if (parentPath) {
+      this.editorCommit();
+      dispatch(actions.moveNode(path, parentPath,
+                                actions.MovePositions.AFTER));
+    }
+    var newPath = path.split('.').slice(0, -2);
+    newPath[newPath.length - 1]++;
+    root.select(newPath.join('.'));
+    return stahp(ev);
+  },
+  onEditorTabKeyDown(ev) {
+    const { dispatch, root, siblings, path } = this.props;
+    // On Tab, adopt the node as last child of previous sibling.
+    var parts = path.split('.');
+    var index = parseInt(parts.pop());
+    if (index - 1 >= 0) {
+      var newPath = parts.concat([index - 1]).join('.');
+      this.editorCommit();
+      dispatch(actions.moveNode(path, newPath,
+                                actions.MovePositions.ADOPT_LAST));
+      // TODO: select appropriate node, last child of newPath
+      root.deselect();
+    }
+    return stahp(ev);
   },
   onEditorKeyUp(ev) {
     const { dispatch, root, path } = this.props;
     switch (ev.key) {
-      case 'Escape':
-        stahp(ev);
-        return this.editorCancel();
       case 'Enter':
-        stahp(ev);
-        return this.editorCommit();
+        this.editorCommit();
+        root.select(root.getNextNodePath(path), true);
+        // TODO: Create a new item as next sibling
+        return stahp(ev);
       case 'ArrowUp':
+        this.editorCommit();
         root.select(root.getPreviousNodePath(path), true);
         return stahp(ev);
       case 'ArrowDown':
+        this.editorCommit();
         root.select(root.getNextNodePath(path), true);
         return stahp(ev);
     }
@@ -189,22 +202,16 @@ export const OutlineNode = React.createClass({
     this.setState({ editorValue: ev.target.value });
   },
   onEditorBlur(ev) {
+    const { root, path } = this.props;
     this.editorCommit();
-  },
-  editorStart() {
-    this.setState({ editorValue: this.props.node.get('title') });
-    this.setEditing(true);
-  },
-  editorCancel() {
-    this.setEditing(false);
+    root.deselect();
   },
   editorCommit() {
-    const { dispatch, node, path } = this.props;
+    const { dispatch, node, path, root } = this.props;
+    const { editorValue } = this.state;
     if (this.state.editorValue !== this.props.node.get('title')) {
-      dispatch(actions.setNodeAttribute(
-        path, 'title', this.state.editorValue));
+      dispatch(actions.setNodeAttribute(path, 'title', editorValue));
     }
-    this.setEditing(false);
   },
   onDragStart(ev) {
     const { path, node } = this.props;
@@ -254,16 +261,6 @@ export const OutlineNode = React.createClass({
                                 this.state.positionPreview));
     }
     this.setState({ positionPreview: null });
-    return stahp(ev);
-  },
-  onDelete(ev) {
-    const { dispatch } = this.props;
-    dispatch(actions.deleteNode(this.props.path))
-    return stahp(ev);
-  },
-  onToggleCollapsed(ev) {
-    const { dispatch, node, path } = this.props;
-    dispatch(actions.setNodeAttribute(path, 'collapsed', !node.get('collapsed') ));
     return stahp(ev);
   }
 });
