@@ -30,7 +30,15 @@ const store = createStoreWithMiddleware(reducers, {
       ]},
       {title: "baz"}
     ]},
-    {title: "gamma"}
+    {title: "gamma"},
+    {title: "level1", children: [
+      {title: 'level2', children: [
+        {title: 'level3', children: [
+          {title: 'level4'}
+        ]}
+      ]}
+    ]},
+    {title: 'thud'}
   ])
 });
 
