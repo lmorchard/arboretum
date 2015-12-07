@@ -80,15 +80,16 @@ function nodes_moveNode(state, action) {
   return state.update(omitNullChildNodes);
 }
 
-const omitNullChildNodes = (children) =>
-    children.filter(node => node !== null).map(node => {
-      if (!node.has('children')) { return node; }
-      const children = omitNullChildNodes(node.get('children'));
-      // If there are no children left after omitting nulls, just omit the
-      // children property altogether. Otherwise, use the updated list.
-      return children.size === 0 ? node.delete('children') :
-                                   node.set('children', children);
-    });
+function omitNullChildNodes(children) {
+  return children.filter(node => node !== null).map(node => {
+    if (!node.has('children')) { return node; }
+    const children = omitNullChildNodes(node.get('children'));
+    // If there are no children left after omitting nulls, just omit the
+    // children property altogether. Otherwise, use the updated list.
+    return children.size === 0 ? node.delete('children') :
+                                 node.set('children', children);
+  });
+}
 
 export default combineReducers({
   nodes
