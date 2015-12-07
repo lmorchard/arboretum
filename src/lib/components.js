@@ -4,37 +4,45 @@ import { connect } from 'react-redux';
 import classNames from 'classnames';
 
 import * as actions from './actions';
+import { getNextNodePath, getPreviousNodePath } from './utils';
 
 export const Outline = connect(state => {
-  return { nodes: state.nodes.toJS() };
+  return { nodes: state.nodes };
 })(React.createClass({
   getInitialState() {
     return {
       selected: null,
-      editing: false
+      editing: null
     };
   },
   render() {
     const { dispatch, nodes } = this.props;
-    const rootState = {
-      get: (name) => this.state[name],
-      set: (name, value) => {
-        const data = {};
-        data[name] = value;
-        this.setState(data);
+    const root = {
+      getState: (name) => this.state[name],
+      setState: (data) => this.setState(data),
+      selectPrevious: (path) => {
+        const newPath = getPreviousNodePath(nodes, path);
+        if (newPath) {
+          this.setState({ selection: newPath, editing: newPath });
+        }
+      },
+      selectNext: (path) => {
+        const newPath = getNextNodePath(nodes, path);
+        if (newPath) {
+          this.setState({ selection: newPath, editing: newPath });
+        }
       }
     };
     return (
-      <OutlineTree path="" dispatch={dispatch} nodes={nodes}
-                   rootState={rootState} />
+      <OutlineTree path="" dispatch={dispatch} nodes={nodes.toJS()} root={root} />
     );
   }
 }));
 
-export const OutlineTree = ({ dispatch, nodes, rootState, path }) =>
+export const OutlineTree = ({ dispatch, nodes, root, path }) =>
   <ul className="outline">
     {nodes.map((node, index) =>
-      <OutlineNode dispatch={dispatch} rootState={rootState}
+      <OutlineNode dispatch={dispatch} root={root}
                    node={node} key={index} index={index}
                    path={path + index} />
     )}
@@ -43,15 +51,14 @@ export const OutlineTree = ({ dispatch, nodes, rootState, path }) =>
 export const OutlineNode = React.createClass({
   getInitialState() {
     return {
-      editing: false,
       editorValue: this.props.node.title,
       dragging: false,
       positionPreview: null
     };
   },
   render() {
-    const { dispatch, node, path, rootState } = this.props;
-    const { positionPreview, editing, editorValue, dragging } = this.state;
+    const { dispatch, node, path, root } = this.props;
+    const { positionPreview, editorValue, dragging } = this.state;
 
     // HACK: Disable dragging when any node is edited.
     // On Firefox, input fields don't receive mouse clicks
@@ -59,8 +66,9 @@ export const OutlineNode = React.createClass({
     //
     // https://bugzilla.mozilla.org/show_bug.cgi?id=800050
     // https://bugzilla.mozilla.org/show_bug.cgi?id=1189486
-    const draggable = !rootState.get('editing');
-    const selected = rootState.get('selection') === path;
+    const selected = root.getState('selection') === path;
+    const editing = root.getState('editing') === path;
+    const draggable = !editing;
 
     return (
       <li className={classNames({
@@ -115,27 +123,29 @@ export const OutlineNode = React.createClass({
         </div>
 
         {!node.collapsed && node.children &&
-          <OutlineTree dispatch={dispatch} rootState={rootState}
+          <OutlineTree dispatch={dispatch} root={root}
                        path={path + '.children.'} nodes={node.children} />}
 
       </li>
     );
   },
   setEditing(isEditing) {
-    this.setState({ editing: isEditing });
-    // HACK: Track editing on the root state, so we can disable all dragging
-    this.props.rootState.set('editing', isEditing);
-    if (!isEditing) {
-      this.props.rootState.set('selection', null);
+    const { root, path } = this.props;
+    if (isEditing) {
+      // HACK: Track editing on the root state, so we can disable all dragging
+      root.setState({ editing: path, selection: path });
+    } else {
+      root.setState({ editing: null, selection: null });
     }
   },
   onSelectionClick(ev) {
-    this.props.rootState.set('selection', this.props.path);
+    this.props.root.setState({ selection: this.props.path });
   },
   onTitleDoubleClick(ev) {
     this.editorStart();
   },
   onEditorKeyUp(ev) {
+    const { root, path } = this.props;
     switch (ev.key) {
       case 'Escape':
         stahp(ev);
@@ -144,9 +154,11 @@ export const OutlineNode = React.createClass({
         stahp(ev);
         return this.editorCommit();
       case 'ArrowUp':
-        break;
+        root.selectPrevious(path);
+        return stahp(ev);
       case 'ArrowDown':
-        break;
+        root.selectNext(path);
+        return stahp(ev);
     }
   },
   onEditorChange(ev) {
