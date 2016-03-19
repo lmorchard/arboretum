@@ -17,9 +17,7 @@ const logger = store => next => action => {
   return result
 };
 
-const createStoreWithMiddleware = applyMiddleware(logger)(createStore);
-
-const store = createStoreWithMiddleware(reducers, {
+const store = createStore(reducers, {
   nodes: Immutable.fromJS([
     {title: "alpha"},
     {title: "beta", children: [
@@ -40,7 +38,7 @@ const store = createStoreWithMiddleware(reducers, {
     ]},
     {title: 'thud'}
   ])
-});
+}, applyMiddleware(logger));
 
 window.store = store;
 

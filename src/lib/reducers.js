@@ -5,13 +5,13 @@ import * as actions from './actions';
 
 export function nodes(state=[], action) {
   switch (action.type) {
-    case actions.SET_NODE_ATTRIBUTE:
+    case actions.setNodeAttribute.type:
       return nodes_setNodeAttribute(state, action);
-    case actions.INSERT_NODE:
+    case actions.insertNode.type:
       return nodes_insertNode(state, action);
-    case actions.DELETE_NODE:
+    case actions.deleteNode.type:
       return nodes_deleteNode(state, action);
-    case actions.MOVE_NODE:
+    case actions.moveNode.type:
       return nodes_moveNode(state, action);
     default:
       return state;
@@ -29,13 +29,13 @@ function nodes_insertNode(state, action) {
   const toPath = action.toPath.split('.');
 
   // Insert the node into the new position...
-  if (position == actions.MovePositions.ADOPT ||
-      position == actions.MovePositions.ADOPT_LAST) {
+  if (position == actions.moveNode.positions.ADOPT ||
+      position == actions.moveNode.positions.ADOPT_LAST) {
     // Adopt the node into parent, creating the child list if necessary.
     return state.updateIn(toPath, parent => {
       if (!parent.has('children')) {
         return parent.set('children', List([node]));
-      } else if (position === actions.MovePositions.ADOPT) {
+      } else if (position === actions.moveNode.positions.ADOPT) {
         return parent.update('children', children => children.unshift(node));
       } else {
         return parent.update('children', children => children.push(node));
@@ -45,7 +45,7 @@ function nodes_insertNode(state, action) {
 
   // Insert node before or after toPath, depending on action position
   const index = parseInt(toPath.pop()) +
-                ((position == actions.MovePositions.BEFORE) ? 0 : 1);
+                ((position == actions.moveNode.positions.BEFORE) ? 0 : 1);
   return state.updateIn(toPath, nodes => nodes.splice(index, 0, node));
 }
 

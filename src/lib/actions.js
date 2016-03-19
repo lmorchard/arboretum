@@ -1,27 +1,21 @@
-export const MOVE_NODE = 'MOVE_NODE';
-export const INSERT_NODE = 'INSERT_NODE';
-export const DELETE_NODE = 'DELETE_NODE';
-export const SET_NODE_ATTRIBUTE = 'SET_NODE_ATTRIBUTE';
-
-export const MovePositions = {
-  BEFORE: 'BEFORE',
-  AFTER: 'AFTER',
-  ADOPT: 'ADOPT',
-  ADOPT_LAST: 'ADOPT_LAST'
-};
-
-export function setNodeAttribute(path, name, value) {
-  return { type: SET_NODE_ATTRIBUTE, path, name, value };
+function action(type, fn, props) {
+  const creator = (...args) => ({...fn(...args), type});
+  exports[type] = Object.assign(creator, {type}, props || {});
 }
 
-export function insertNode(node, path, position) {
-  return { type: INSERT_NODE, node, path, position };
+function symbols(...items) {
+  const out = {};
+  items.forEach(item => out[item] = Symbol(item));
+  return out;
 }
 
-export function deleteNode(path) {
-  return { type: DELETE_NODE, path };
-}
+action('setNodeAttribute', (path, name, value) => ({path, name, value}));
 
-export function moveNode(fromPath, toPath, position) {
-  return { type: MOVE_NODE, fromPath, toPath, position };
-}
+action('insertNode', (node, path, position) => ({node, path, position}));
+
+action('deleteNode', (path) => ({path}));
+
+action('moveNode',
+  (fromPath, toPath, position) => ({fromPath, toPath, position}),
+  { positions: symbols('BEFORE', 'AFTER', 'ADOPT', 'ADOPT_LAST') }
+);

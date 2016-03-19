@@ -77,11 +77,11 @@ export const OutlineNode = React.createClass({
             'has-children': hasChildren,
             'collapsed': isCollapsed,
             'position-preview-adopt':
-              positionPreview == actions.MovePositions.ADOPT,
+              positionPreview == actions.moveNode.positions.ADOPT,
             'position-preview-before':
-              positionPreview == actions.MovePositions.BEFORE,
+              positionPreview == actions.moveNode.positions.BEFORE,
             'position-preview-after':
-              positionPreview == actions.MovePositions.AFTER,
+              positionPreview == actions.moveNode.positions.AFTER,
           })}
           draggable={draggable}
           onDragStart={this.onDragStart}
@@ -158,7 +158,7 @@ export const OutlineNode = React.createClass({
     if (parentPath) {
       this.editorCommit();
       dispatch(actions.moveNode(path, parentPath,
-                                actions.MovePositions.AFTER));
+                                actions.moveNode.positions.AFTER));
     }
     var newPath = path.split('.').slice(0, -2);
     newPath[newPath.length - 1]++;
@@ -174,7 +174,7 @@ export const OutlineNode = React.createClass({
       var newPath = parts.concat([index - 1]).join('.');
       this.editorCommit();
       dispatch(actions.moveNode(path, newPath,
-                                actions.MovePositions.ADOPT_LAST));
+                                actions.moveNode.positions.ADOPT_LAST));
       // TODO: select appropriate node, last child of newPath
       root.deselect();
     }
@@ -238,7 +238,7 @@ export const OutlineNode = React.createClass({
       const pos = (ev.clientX > (rect.left + 50)) ? 'ADOPT' :
                   (ev.clientY < (rect.top + rect.height / 2)) ? 'BEFORE' :
                   'AFTER';
-      this.setState({ positionPreview: actions.MovePositions[pos] });
+      this.setState({ positionPreview: actions.moveNode.positions[pos] });
     }
     return stahp(ev);
   },
