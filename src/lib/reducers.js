@@ -1,11 +1,52 @@
 import { combineReducers } from 'redux';
-import Immutable, { List } from 'immutable';
+import Immutable, { List, Map } from 'immutable';
 import { handleActions } from 'redux-actions';
 
-import { setNodeAttribute, insertNode, deleteNode, moveNode } from './actions';
+import { setNodeAttribute, insertNode, deleteNode, selectNode, clearSelection,
+         moveNode } from './actions';
+import { splitPath } from './utils';
+
+export default combineReducers({
+  meta: handleActions({
+    [selectNode.type]: meta_selectNode,
+    [clearSelection.type]: meta_clearSelection,
+  }, Map()),
+  nodes: handleActions({
+    [setNodeAttribute.type]: nodes_setNodeAttribute,
+    [insertNode.type]: nodes_insertNode,
+    [deleteNode.type]: nodes_deleteNode,
+    [selectNode.type]: nodes_selectNode,
+    [clearSelection.type]: nodes_clearSelection,
+    [moveNode.type]: nodes_moveNode
+  }, List())
+});
+
+function meta_clearSelection(state) {
+  return state.set('selected', null);
+}
+
+function meta_selectNode(state, {payload: {path}}) {
+  return state.set('selected', path);
+}
 
 function nodes_setNodeAttribute(state, {payload: {name, value, path}}) {
   return state.updateIn(path.split('.'), node => node.set(name, value));
+}
+
+function nodes_clearSelection(state) {
+  const deselectNode = node => {
+    node = node.remove('selected');
+    if (node.has('children')) {
+      node = node.set('children', node.get('children').map(deselectNode));
+    }
+    return node;
+  };
+  return state.map(deselectNode);
+}
+
+function nodes_selectNode(state, {payload: {path}}) {
+  return nodes_clearSelection(state)
+    .updateIn(path.split('.'), node => node.set('selected', true));
 }
 
 function nodes_insertNode(state, {payload: {node, position, toPath}}) {
@@ -78,12 +119,3 @@ function omitNullChildNodes(children) {
                                  node.set('children', children);
   });
 }
-
-export default combineReducers({
-  nodes: handleActions({
-    [setNodeAttribute.type]: nodes_setNodeAttribute,
-    [insertNode.type]: nodes_insertNode,
-    [deleteNode.type]: nodes_deleteNode,
-    [moveNode.type]: nodes_moveNode
-  }, [])
-});

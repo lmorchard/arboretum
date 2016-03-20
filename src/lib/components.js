@@ -3,45 +3,32 @@ import ReactDOM from 'react-dom';
 import { connect } from 'react-redux';
 import classNames from 'classnames';
 
-import * as actions from './actions';
-import { getNextNodePath, getPreviousNodePath } from './utils';
+import { setNodeAttribute, insertNode, deleteNode, moveNode, selectNode,
+         clearSelection } from './actions';
+import { getNextNodePath, getPreviousNodePath, splitPath } from './utils';
 
-export const Outline = connect(state => {
-  return { nodes: state.nodes };
-})(React.createClass({
-  getInitialState() {
-    return { selected: null };
-  },
-  render() {
-    const { dispatch, nodes } = this.props;
-    const root = {
-      getState: (name) => this.state[name],
-      setState: (data) => this.setState(data),
-      getPreviousNodePath: (path) => getPreviousNodePath(nodes, path),
-      getNextNodePath: (path) => getNextNodePath(nodes, path),
-      select: (path) => !path ? null : this.setState({ selection: path }),
-      deselect: () => this.setState({ selection: null })
-    };
-    return (
-      <OutlineTree path="" dispatch={dispatch} nodes={nodes} root={root} />
-    );
-  }
-}));
+export const Outline = connect(state => ({
+  meta: state.meta,
+  nodes: state.nodes
+}))(
+  ({ dispatch, meta, nodes }) =>
+    <OutlineTree dispatch={dispatch} meta={meta} root={nodes} nodes={nodes}
+                 path="" />
+);
 
-export const OutlineTree = ({ dispatch, nodes, root, path }) =>
+export const OutlineTree = (props) =>
   <ul className="outline">
-    {nodes.map((node, index) =>
-      <OutlineNode dispatch={dispatch} root={root}
-                   node={node} siblings={nodes}
-                   key={index} index={index}
-                   path={path + index} />
+    {props.nodes.map((node, index) =>
+      <OutlineNode {...props} node={node} siblings={props.nodes}
+                   key={index} path={props.path + index} />
     )}
   </ul>;
 
 export const OutlineNode = React.createClass({
   getInitialState() {
+    const { node } = this.props;
     return {
-      editorValue: this.props.node.get('title'),
+      editorValue: node.get('title'),
       dragging: false,
       positionPreview: null
     };
@@ -52,7 +39,7 @@ export const OutlineNode = React.createClass({
     }
   },
   render() {
-    const { dispatch, node, path, root } = this.props;
+    const { dispatch, meta, root, node, path } = this.props;
     const { positionPreview, editorValue, dragging } = this.state;
 
     // HACK: Disable dragging when any node is edited.
@@ -61,28 +48,30 @@ export const OutlineNode = React.createClass({
     //
     // https://bugzilla.mozilla.org/show_bug.cgi?id=800050
     // https://bugzilla.mozilla.org/show_bug.cgi?id=1189486
-    const selected = root.getState('selection') === path;
-    const draggable = !root.getState('selection');
+    const selected = node.get('selected');
+    const draggable = !meta.get('selected');
     const hasChildren = node.has('children');
     const isCollapsed = !!node.get('collapsed');
 
     const { title } = node.toJS();
 
+    const className = classNames({
+      'outline-node': true,
+      'dragging': dragging,
+      'editing': selected,
+      'selected': selected,
+      'has-children': hasChildren,
+      'collapsed': isCollapsed,
+      'position-preview-adopt':
+        positionPreview == moveNode.positions.ADOPT,
+      'position-preview-before':
+        positionPreview == moveNode.positions.BEFORE,
+      'position-preview-after':
+        positionPreview == moveNode.positions.AFTER,
+    });
+
     return (
-      <li className={classNames({
-            'outline-node': true,
-            'dragging': dragging,
-            'editing': selected,
-            'selected': selected,
-            'has-children': hasChildren,
-            'collapsed': isCollapsed,
-            'position-preview-adopt':
-              positionPreview == actions.moveNode.positions.ADOPT,
-            'position-preview-before':
-              positionPreview == actions.moveNode.positions.BEFORE,
-            'position-preview-after':
-              positionPreview == actions.moveNode.positions.AFTER,
-          })}
+      <li className={className}
           draggable={draggable}
           onDragStart={this.onDragStart}
           onDragEnter={this.onDragEnter}
@@ -121,24 +110,26 @@ export const OutlineNode = React.createClass({
         </div>
 
         {!isCollapsed && hasChildren &&
-          <OutlineTree dispatch={dispatch} root={root}
-                       path={path + '.children.'} nodes={node.get('children')} />}
+          <OutlineTree dispatch={dispatch}
+                       path={path + '.children.'}
+                       meta={meta} root={root}
+                       nodes={node.get('children')} />}
 
       </li>
     );
   },
   onSelectionClick(ev) {
-    const { root, path } = this.props;
-    root.select(path);
+    const { dispatch, path } = this.props;
+    dispatch(selectNode(path));
   },
   onDelete(ev) {
-    const { dispatch } = this.props;
-    dispatch(actions.deleteNode(this.props.path))
+    const { dispatch, path } = this.props;
+    dispatch(deleteNode(path))
     return stahp(ev);
   },
   onToggleCollapsed(ev) {
     const { dispatch, node, path } = this.props;
-    dispatch(actions.setNodeAttribute(path, 'collapsed', !node.get('collapsed')));
+    dispatch(setNodeAttribute(path, 'collapsed', !node.get('collapsed')));
     return stahp(ev);
   },
   onEditorKeyDown(ev) {
@@ -152,49 +143,43 @@ export const OutlineNode = React.createClass({
     }
   },
   onEditorShiftTabKeyDown(ev) {
-    const { dispatch, root, path } = this.props;
+    const { dispatch, path } = this.props;
     // On Shift-Tab, move the node to after its parent.
-    var parentPath = path.split('.').slice(0, -2).join('.');
+    var parentPath = splitPath(path).slice(0, -2).join('.');
     if (parentPath) {
       this.editorCommit();
-      dispatch(actions.moveNode(path, parentPath,
-                                actions.moveNode.positions.AFTER));
+      dispatch(moveNode(path, parentPath, moveNode.positions.AFTER));
     }
-    var newPath = path.split('.').slice(0, -2);
-    newPath[newPath.length - 1]++;
-    root.select(newPath.join('.'));
     return stahp(ev);
   },
   onEditorTabKeyDown(ev) {
-    const { dispatch, root, siblings, path } = this.props;
+    const { dispatch, siblings, path } = this.props;
     // On Tab, adopt the node as last child of previous sibling.
-    var parts = path.split('.');
+    var parts = splitPath(path);
     var index = parseInt(parts.pop());
     if (index - 1 >= 0) {
       var newPath = parts.concat([index - 1]).join('.');
       this.editorCommit();
-      dispatch(actions.moveNode(path, newPath,
-                                actions.moveNode.positions.ADOPT_LAST));
-      // TODO: select appropriate node, last child of newPath
-      root.deselect();
+      dispatch(moveNode(path, newPath, moveNode.positions.ADOPT_LAST));
+      dispatch(clearSelection());
     }
     return stahp(ev);
   },
   onEditorKeyUp(ev) {
-    const { dispatch, root, path } = this.props;
+    const { dispatch, root, nodes, path } = this.props;
     switch (ev.key) {
-      case 'Enter':
-        this.editorCommit();
-        root.select(root.getNextNodePath(path), true);
-        // TODO: Create a new item as next sibling
-        return stahp(ev);
       case 'ArrowUp':
         this.editorCommit();
-        root.select(root.getPreviousNodePath(path), true);
+        dispatch(selectNode(getPreviousNodePath(root, path)));
         return stahp(ev);
       case 'ArrowDown':
         this.editorCommit();
-        root.select(root.getNextNodePath(path), true);
+        dispatch(selectNode(getNextNodePath(root, path)));
+        return stahp(ev);
+      case 'Enter':
+        this.editorCommit();
+        dispatch(selectNode(getNextNodePath(root, path)));
+        // TODO: Create a new item as next sibling
         return stahp(ev);
     }
   },
@@ -202,15 +187,15 @@ export const OutlineNode = React.createClass({
     this.setState({ editorValue: ev.target.value });
   },
   onEditorBlur(ev) {
-    const { root, path } = this.props;
+    const { dispatch, path } = this.props;
     this.editorCommit();
-    root.deselect();
+    dispatch(clearSelection());
   },
   editorCommit() {
-    const { dispatch, node, path, root } = this.props;
+    const { dispatch, node, path } = this.props;
     const { editorValue } = this.state;
     if (this.state.editorValue !== this.props.node.get('title')) {
-      dispatch(actions.setNodeAttribute(path, 'title', editorValue));
+      dispatch(setNodeAttribute(path, 'title', editorValue));
     }
   },
   onDragStart(ev) {
@@ -238,7 +223,7 @@ export const OutlineNode = React.createClass({
       const pos = (ev.clientX > (rect.left + 50)) ? 'ADOPT' :
                   (ev.clientY < (rect.top + rect.height / 2)) ? 'BEFORE' :
                   'AFTER';
-      this.setState({ positionPreview: actions.moveNode.positions[pos] });
+      this.setState({ positionPreview: moveNode.positions[pos] });
     }
     return stahp(ev);
   },
@@ -257,8 +242,7 @@ export const OutlineNode = React.createClass({
     const data = JSON.parse(ev.dataTransfer.getData('text'));
     // Ensure the drop target is not the dragged node or a child
     if (this.props.path.indexOf(draggedPath) !== 0) {
-      dispatch(actions.moveNode(data.path, this.props.path,
-                                this.state.positionPreview));
+      dispatch(moveNode(data.path, this.props.path, this.state.positionPreview))
     }
     this.setState({ positionPreview: null });
     return stahp(ev);

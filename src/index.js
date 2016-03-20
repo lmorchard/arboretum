@@ -7,13 +7,19 @@ import Immutable from 'immutable';
 
 import { Provider } from 'react-redux';
 import { createStore, applyMiddleware } from 'redux';
-import promiseMiddleware from 'redux-promise';
+
+import thunk from 'redux-thunk';
+import promise from 'redux-promise';
+import createLogger from 'redux-logger';
 
 import * as actions from './lib/actions';
 import reducers from './lib/reducers';
 import { Outline } from './lib/components';
 
 const initialData = {
+  meta: Immutable.fromJS({
+    selected: null
+  }),
   nodes: Immutable.fromJS([
     {title: "alpha"},
     {title: "beta", children: [
@@ -36,19 +42,12 @@ const initialData = {
   ])
 };
 
-function logger({ getState }) {
-  return (next) => (action) => {
-    console.log('will dispatch', action);
-    let returnValue = next(action);
-    console.log('state after dispatch', getState());
-    return returnValue;
-  }
-}
+const logger = createLogger();
 
 const store = createStore(
   reducers,
   initialData,
-  applyMiddleware(promiseMiddleware, logger)
+  applyMiddleware(thunk, promise, logger)
 );
 
 window.store = store;
