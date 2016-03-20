@@ -1,24 +1,19 @@
-function action(type, fn, props) {
-  return exports[type] = Object.assign(
-    (...args) => ({ type, payload: { ...fn(...args) } }),
-    { type },
-    props || {}
-  );
+import { actions, symbols } from './utils';
+
+module.exports = actions({
+  setNodeAttribute: (path, name, value) => ({path, name, value}),
+  insertNode: (node, path, position) => ({node, path, position}),
+  deleteNode: (path) => ({path}),
+  moveNode: [
+    (fromPath, toPath, position) => ({fromPath, toPath, position}),
+    {positions: symbols('BEFORE', 'AFTER', 'ADOPT', 'ADOPT_LAST')}
+  ],
+});
+
+module.exports.moveNodeDelayed = (fromPath, toPath, position) => {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      resolve(module.exports.moveNode(fromPath, toPath, position))
+    }, 1000);
+  });
 }
-
-function symbols(...items) {
-  const out = {};
-  items.forEach(item => out[item] = Symbol(item));
-  return out;
-}
-
-action('setNodeAttribute', (path, name, value) => ({path, name, value}));
-
-action('insertNode', (node, path, position) => ({node, path, position}));
-
-action('deleteNode', (path) => ({path}));
-
-action('moveNode',
-  (fromPath, toPath, position) => ({fromPath, toPath, position}),
-  { positions: symbols('BEFORE', 'AFTER', 'ADOPT', 'ADOPT_LAST') }
-);

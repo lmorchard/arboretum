@@ -1,3 +1,28 @@
+export function actions(actionmap) {
+  const out = {};
+  Object.keys(actionmap).forEach(type => {
+    const item = actionmap[type];
+    let fn, props;
+    if (Array.isArray(item)) {
+      [fn, props] = item;
+    } else {
+      fn = item;
+    }
+    out[type] = Object.assign(
+      (...args) => ({ type, payload: { ...fn(...args) } }),
+      { type },
+      props || {}
+    );
+  });
+  return out;
+}
+
+export function symbols(...items) {
+  const out = {};
+  items.forEach(item => out[item] = Symbol(item));
+  return out;
+}
+
 export function splitPath (path) {
   return path.split('.');
 }
