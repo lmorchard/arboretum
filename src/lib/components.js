@@ -65,11 +65,11 @@ export const OutlineNode = React.createClass({
       'has-children': hasChildren,
       'collapsed': isCollapsed,
       'position-preview-adopt':
-        positionPreview == moveNode.positions.ADOPT,
+        positionPreview == insertNode.positions.ADOPT,
       'position-preview-before':
-        positionPreview == moveNode.positions.BEFORE,
+        positionPreview == insertNode.positions.BEFORE,
       'position-preview-after':
-        positionPreview == moveNode.positions.AFTER,
+        positionPreview == insertNode.positions.AFTER,
     });
 
     return (
@@ -140,7 +140,7 @@ export const OutlineNode = React.createClass({
       const pos = (ev.clientX > (rect.left + 50)) ? 'ADOPT' :
                   (ev.clientY < (rect.top + rect.height / 2)) ? 'BEFORE' :
                   'AFTER';
-      this.setState({ positionPreview: moveNode.positions[pos] });
+      this.setState({ positionPreview: insertNode.positions[pos] });
     }
     return stahp(ev);
   },
@@ -229,7 +229,7 @@ export const OutlineNodeEditor = React.createClass({
     const { dispatch, root, nodes, path } = this.props;
     if (this.resolve()) {
       const newNode = new Map({ selected: true, title: '' });
-      dispatch(insertNode(newNode, path, moveNode.positions[newPosition]));
+      dispatch(insertNode(newNode, path, insertNode.positions[newPosition]));
     }
     return stahp(ev);
   },
@@ -260,7 +260,7 @@ export const OutlineNodeEditor = React.createClass({
     const newPath = getNextSiblingPath(root, path);
     if (newPath) {
       this.resolve(false, false, true);
-      dispatch(moveNode(path, newPath, moveNode.positions.AFTER));
+      dispatch(moveNode(path, newPath, insertNode.positions.AFTER));
     }
     return stahp(ev);
   },
@@ -269,7 +269,7 @@ export const OutlineNodeEditor = React.createClass({
     const newPath = getPreviousSiblingPath(root, path);
     if (newPath) {
       this.resolve(false, false, true);
-      dispatch(moveNode(path, newPath, moveNode.positions.BEFORE));
+      dispatch(moveNode(path, newPath, insertNode.positions.BEFORE));
     }
     return stahp(ev);
   },
@@ -278,7 +278,7 @@ export const OutlineNodeEditor = React.createClass({
     const newPath = getParentNodePath(root, path);
     if (newPath) {
       this.resolve(false, false, true);
-      dispatch(moveNode(path, newPath, moveNode.positions.AFTER));
+      dispatch(moveNode(path, newPath, insertNode.positions.AFTER));
     }
     return stahp(ev);
   },
@@ -287,7 +287,7 @@ export const OutlineNodeEditor = React.createClass({
     const newPath = getPreviousSiblingPath(root, path);
     if (newPath) {
       this.resolve(false, false, true);
-      dispatch(moveNode(path, newPath, moveNode.positions.ADOPT_LAST));
+      dispatch(moveNode(path, newPath, insertNode.positions.ADOPT_LAST));
     }
     return stahp(ev);
   }

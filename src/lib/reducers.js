@@ -55,13 +55,13 @@ function nodes_insertNode(state, {payload: {node, position, path}}) {
   const pathParts = path.split('.');
 
   // Insert the node into the new position...
-  if (position == moveNode.positions.ADOPT ||
-      position == moveNode.positions.ADOPT_LAST) {
+  if (position == insertNode.positions.ADOPT ||
+      position == insertNode.positions.ADOPT_LAST) {
     // Adopt the node into parent, creating the child list if necessary.
     return state.updateIn(pathParts, parent => {
       if (!parent.has('children')) {
         return parent.set('children', List([node]));
-      } else if (position === moveNode.positions.ADOPT) {
+      } else if (position === insertNode.positions.ADOPT) {
         return parent.update('children', children => children.unshift(node));
       } else {
         return parent.update('children', children => children.push(node));
@@ -71,7 +71,7 @@ function nodes_insertNode(state, {payload: {node, position, path}}) {
 
   // Insert node before or after pathParts, depending on action position
   const index = parseInt(pathParts.pop()) +
-                ((position == moveNode.positions.BEFORE) ? 0 : 1);
+                ((position == insertNode.positions.BEFORE) ? 0 : 1);
   return state.updateIn(pathParts, nodes => nodes.splice(index, 0, node));
 }
 
