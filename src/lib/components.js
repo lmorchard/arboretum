@@ -2,10 +2,13 @@ import React, { Component, PropTypes } from 'react';
 import ReactDOM from 'react-dom';
 import { connect } from 'react-redux';
 import classNames from 'classnames';
+import Immutable, { List, Map } from 'immutable';
 
 import { setNodeAttribute, insertNode, deleteNode, moveNode, selectNode,
          clearSelection } from './actions';
-import { getNextNodePath, getPreviousNodePath, splitPath } from './utils';
+
+import { getNextNodePath, getPreviousNodePath, getNextSiblingPath,
+         getPreviousSiblingPath, splitPath } from './utils';
 
 export const Outline = connect(state => ({
   meta: state.meta,
@@ -123,68 +126,118 @@ export const OutlineNode = React.createClass({
   onEditorKeyDown(ev) {
     switch (ev.key) {
       case 'Tab':
-        if (ev.shiftKey) {
-          return this.onEditorShiftTabKeyDown(ev);
-        } else {
-          return this.onEditorTabKeyDown(ev);
-        }
+        return ev.shiftKey ? this.onEditorPromoteNode(ev) :
+                             this.onEditorDemoteNode(ev);
+      case 'ArrowLeft':
+        return ev.shiftKey ? this.onEditorPromoteNode(ev) : null;
+      case 'ArrowRight':
+        return ev.shiftKey ? this.onEditorDemoteNode(ev) : null;
+      case 'ArrowUp':
+        return ev.shiftKey ? this.onEditorMoveNodeUp(ev) :
+                             this.onEditorSelectUp(ev);
+      case 'ArrowDown':
+        return ev.shiftKey ? this.onEditorMoveNodeDown(ev) :
+                             this.onEditorSelectDown(ev);
     }
   },
-  onEditorShiftTabKeyDown(ev) {
+  onEditorKeyUp(ev) {
+    const { dispatch, root, nodes, path } = this.props;
+    let newPath;
+    switch (ev.key) {
+      case 'Enter':
+        return this.onEditorCommit(ev);
+      case 'Escape':
+        return this.onEditorCancel(ev);
+    }
+  },
+  onEditorCommit(ev) {
+    const { dispatch, root, nodes, path } = this.props;
+    if (this.resolveEditor()) {
+      const newNode = new Map({ selected: true, title: '' });
+      const position = ev.shiftKey ? 'ADOPT' : 'AFTER';
+      dispatch(insertNode(newNode, path, moveNode.positions[position]));
+    }
+    return stahp(ev);
+  },
+  onEditorCancel(ev) {
+    this.resolveEditor(true);
+    return stahp(ev);
+  },
+  onEditorMoveNodeDown(ev) {
+    const { dispatch, root, nodes, path } = this.props;
+    const newPath = getNextSiblingPath(root, path);
+    if (newPath) {
+      this.resolveEditor(false, false, true);
+      dispatch(moveNode(path, newPath, moveNode.positions.AFTER));
+    }
+    return stahp(ev);
+  },
+  onEditorMoveNodeUp(ev) {
+    const { dispatch, root, nodes, path } = this.props;
+    const newPath = getPreviousSiblingPath(root, path);
+    if (newPath) {
+      this.resolveEditor(false, false, true);
+      dispatch(moveNode(path, newPath, moveNode.positions.BEFORE));
+    }
+    return stahp(ev);
+  },
+  onEditorSelectUp(ev) {
+    const { dispatch, root, nodes, path } = this.props;
+    const newPath = getPreviousNodePath(root, path);
+    if (newPath) {
+      this.resolveEditor();
+      dispatch(selectNode(newPath));
+    }
+    return stahp(ev);
+  },
+  onEditorSelectDown(ev) {
+    const { dispatch, root, nodes, path } = this.props;
+    const newPath = getNextNodePath(root, path);
+    if (newPath) {
+      this.resolveEditor();
+      dispatch(selectNode(newPath));
+    }
+    return stahp(ev);
+  },
+  onEditorPromoteNode(ev) {
     const { dispatch, path } = this.props;
     // On Shift-Tab, move the node to after its parent.
     var parentPath = splitPath(path).slice(0, -2).join('.');
     if (parentPath) {
-      this.editorCommit();
+      this.resolveEditor(false, false, true);
       dispatch(moveNode(path, parentPath, moveNode.positions.AFTER));
     }
     return stahp(ev);
   },
-  onEditorTabKeyDown(ev) {
+  onEditorDemoteNode(ev) {
     const { dispatch, siblings, path } = this.props;
     // On Tab, adopt the node as last child of previous sibling.
     var parts = splitPath(path);
     var index = parseInt(parts.pop());
     if (index - 1 >= 0) {
       var newPath = parts.concat([index - 1]).join('.');
-      this.editorCommit();
+      this.resolveEditor(false, false, true);
       dispatch(moveNode(path, newPath, moveNode.positions.ADOPT_LAST));
-      dispatch(clearSelection());
     }
     return stahp(ev);
-  },
-  onEditorKeyUp(ev) {
-    const { dispatch, root, nodes, path } = this.props;
-    switch (ev.key) {
-      case 'ArrowUp':
-        this.editorCommit();
-        dispatch(selectNode(getPreviousNodePath(root, path)));
-        return stahp(ev);
-      case 'ArrowDown':
-        this.editorCommit();
-        dispatch(selectNode(getNextNodePath(root, path)));
-        return stahp(ev);
-      case 'Enter':
-        this.editorCommit();
-        dispatch(selectNode(getNextNodePath(root, path)));
-        // TODO: Create a new item as next sibling
-        return stahp(ev);
-    }
   },
   onEditorChange(ev) {
     this.setState({ editorValue: ev.target.value });
   },
   onEditorBlur(ev) {
     const { dispatch, path } = this.props;
-    this.editorCommit();
-    dispatch(clearSelection());
+    this.resolveEditor();
   },
-  editorCommit() {
+  resolveEditor(discard=false, deselect=true, preserveEmpty=false) {
     const { dispatch, node, path } = this.props;
     const { editorValue } = this.state;
-    if (this.state.editorValue !== this.props.node.get('title')) {
+    if (!preserveEmpty && editorValue == '') {
+      dispatch(deleteNode(path));
+    } else if (!discard && editorValue !== this.props.node.get('title')) {
       dispatch(setNodeAttribute(path, 'title', editorValue));
     }
+    if (deselect) { dispatch(clearSelection()); }
+    return editorValue;
   },
   onDragStart(ev) {
     const { path, node } = this.props;

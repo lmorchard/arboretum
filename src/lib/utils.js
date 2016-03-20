@@ -37,6 +37,23 @@ export function getNodeContext (state, path) {
   }
 }
 
+export function getPreviousSiblingPath (state, path) {
+  var key = splitPath(path);
+  var index = parseInt(key.pop(), 10);
+
+  return (index - 1 < 0) ? null :
+    key.concat([index - 1]).join('.');
+}
+
+export function getNextSiblingPath (state, path) {
+  var key = splitPath(path);
+  var index = parseInt(key.pop(), 10);
+  var siblings = key.length == 0 ? state : state.getIn(key);
+
+  return (index + 1 >= siblings.size) ? null :
+    key.concat([index + 1]).join('.');
+}
+
 export function getPreviousNodePath (state, path) {
   var key = splitPath(path);
   var index = parseInt(key.pop(), 10);

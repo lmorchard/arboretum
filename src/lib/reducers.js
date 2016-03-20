@@ -49,14 +49,16 @@ function nodes_selectNode(state, {payload: {path}}) {
     .updateIn(path.split('.'), node => node.set('selected', true));
 }
 
-function nodes_insertNode(state, {payload: {node, position, toPath}}) {
-  const toPathParts = toPath.split('.');
+function nodes_insertNode(state, {payload: {node, position, path}}) {
+  if (!path) { return state; }
+
+  const pathParts = path.split('.');
 
   // Insert the node into the new position...
   if (position == moveNode.positions.ADOPT ||
       position == moveNode.positions.ADOPT_LAST) {
     // Adopt the node into parent, creating the child list if necessary.
-    return state.updateIn(toPathParts, parent => {
+    return state.updateIn(pathParts, parent => {
       if (!parent.has('children')) {
         return parent.set('children', List([node]));
       } else if (position === moveNode.positions.ADOPT) {
@@ -67,10 +69,10 @@ function nodes_insertNode(state, {payload: {node, position, toPath}}) {
     });
   }
 
-  // Insert node before or after toPathParts, depending on action position
-  const index = parseInt(toPathParts.pop()) +
+  // Insert node before or after pathParts, depending on action position
+  const index = parseInt(pathParts.pop()) +
                 ((position == moveNode.positions.BEFORE) ? 0 : 1);
-  return state.updateIn(toPathParts, nodes => nodes.splice(index, 0, node));
+  return state.updateIn(pathParts, nodes => nodes.splice(index, 0, node));
 }
 
 function nodes_deleteNode(state, {payload}) {
@@ -91,6 +93,8 @@ function nodes_deleteNode(state, {payload}) {
 }
 
 function nodes_moveNode(state, {payload: {position, fromPath, toPath}}) {
+  if (!fromPath || !toPath) { return state; }
+
   const fromPathParts = fromPath.split('.');
   const toPathParts = toPath.split('.');
 
@@ -103,7 +107,7 @@ function nodes_moveNode(state, {payload: {position, fromPath, toPath}}) {
   state = state.setIn(fromPathParts, null);
 
   // Perform the insertion / copy of the node.
-  state = nodes_insertNode(state, {payload: {toPath: toPath, node, position}});
+  state = nodes_insertNode(state, {payload: {path: toPath, node, position}});
 
   // Omit any nodes marked to be deleted.
   return state.update(omitNullChildNodes);

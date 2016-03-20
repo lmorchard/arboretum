@@ -50,11 +50,21 @@ describe('utils', function () {
       '4'
     ];
 
+    this.expectedSiblings = [
+      ['0', '1', '2', '3', '4'],
+      ['1.children.0', '1.children.1', '1.children.2'],
+      ['1.children.1.children.0', '1.children.1.children.1'],
+      ['3.children.0']
+      ['3.children.0.children.0'],
+      ['3.children.0.children.0.children.0'],
+    ];
+
   });
 
   describe('splitPath', function () {
     it('should split a dot-delimited path into a key array', function () {
-      expect(Utils.splitPath('1.children.1.children.2')).to.deep.equal(['1', 'children', '1', 'children', '2']);
+      expect(Utils.splitPath('1.children.1.children.2'))
+        .to.deep.equal(['1', 'children', '1', 'children', '2']);
     })
   })
 
@@ -72,6 +82,43 @@ describe('utils', function () {
       expect(result).to.deep.equal(expected);
     })
   })
+
+  describe('getNextSiblingPath', function () {
+    it('should find the path to the next sibling', function () {
+      var siblingList;
+      while (siblingList = this.expectedSiblings.shift()) {
+        var current, expected, result;
+        current = siblingList.shift();
+        while (siblingList.length) {
+          expected = siblingList.shift();
+          result = Utils.getNextSiblingPath(this.state, current);
+          expect(result).to.equal(expected);
+          current = expected;
+        }
+        result = Utils.getNextSiblingPath(this.state, current);
+        expect(result).to.equal(null);
+      }
+    });
+  });
+
+  describe('getPreviousSiblingPath', function () {
+    it('should find the path to the previous sibling', function () {
+      var siblingList;
+      while (siblingList = this.expectedSiblings.shift()) {
+        siblingList.reverse();
+        var current, expected, result;
+        current = siblingList.shift();
+        while (siblingList.length) {
+          expected = siblingList.shift();
+          result = Utils.getPreviousSiblingPath(this.state, current);
+          expect(result).to.equal(expected);
+          current = expected;
+        }
+        result = Utils.getPreviousSiblingPath(this.state, current);
+        expect(result).to.equal(null);
+      }
+    });
+  });
 
   describe('getNextNodePath', function () {
     it('should find the path to the next node', function () {
