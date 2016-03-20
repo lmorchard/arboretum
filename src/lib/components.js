@@ -8,7 +8,7 @@ import { setNodeAttribute, insertNode, deleteNode, moveNode, selectNode,
          clearSelection } from './actions';
 
 import { getNextNodePath, getPreviousNodePath, getNextSiblingPath,
-         getPreviousSiblingPath, splitPath } from './utils';
+         getPreviousSiblingPath, splitPath, keyEvent } from './utils';
 
 export const Outline = connect(state => ({
   meta: state.meta,
@@ -124,38 +124,29 @@ export const OutlineNode = React.createClass({
     return stahp(ev);
   },
   onEditorKeyDown(ev) {
-    switch (ev.key) {
-      case 'Tab':
-        return ev.shiftKey ? this.onEditorPromoteNode(ev) :
-                             this.onEditorDemoteNode(ev);
-      case 'ArrowLeft':
-        return ev.shiftKey ? this.onEditorPromoteNode(ev) : null;
-      case 'ArrowRight':
-        return ev.shiftKey ? this.onEditorDemoteNode(ev) : null;
-      case 'ArrowUp':
-        return ev.shiftKey ? this.onEditorMoveNodeUp(ev) :
-                             this.onEditorSelectUp(ev);
-      case 'ArrowDown':
-        return ev.shiftKey ? this.onEditorMoveNodeDown(ev) :
-                             this.onEditorSelectDown(ev);
+    switch (keyEvent(ev)) {
+      case 'Shift Tab':        return this.onEditorPromoteNode(ev);
+      case 'Tab':              return this.onEditorDemoteNode(ev);
+      case 'Shift ArrowLeft':  return this.onEditorPromoteNode(ev);
+      case 'Shift ArrowRight': return this.onEditorDemoteNode(ev);
+      case 'Shift ArrowUp':    return this.onEditorMoveNodeUp(ev);
+      case 'Shift ArrowDown':  return this.onEditorMoveNodeDown(ev);
+      case 'ArrowUp':          return this.onEditorSelectUp(ev);
+      case 'ArrowDown':        return this.onEditorSelectDown(ev);
     }
   },
   onEditorKeyUp(ev) {
-    const { dispatch, root, nodes, path } = this.props;
-    let newPath;
-    switch (ev.key) {
-      case 'Enter':
-        return this.onEditorCommit(ev);
-      case 'Escape':
-        return this.onEditorCancel(ev);
+    switch (keyEvent(ev)) {
+      case 'Enter':       return this.onEditorCommit(ev);
+      case 'Shift Enter': return this.onEditorCommit(ev, 'ADOPT');
+      case 'Escape':      return this.onEditorCancel(ev);
     }
   },
-  onEditorCommit(ev) {
+  onEditorCommit(ev, newPosition='AFTER') {
     const { dispatch, root, nodes, path } = this.props;
     if (this.resolveEditor()) {
       const newNode = new Map({ selected: true, title: '' });
-      const position = ev.shiftKey ? 'ADOPT' : 'AFTER';
-      dispatch(insertNode(newNode, path, moveNode.positions[position]));
+      dispatch(insertNode(newNode, path, moveNode.positions[newPosition]));
     }
     return stahp(ev);
   },

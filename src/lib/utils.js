@@ -102,3 +102,12 @@ export function getNextNodePath (state, path) {
 
   return null;
 }
+
+export function keyEvent (ev) {
+  const parts = [];
+  if (ev.ctrlKey) { parts.push('Ctrl'); }
+  if (ev.shiftKey) { parts.push('Shift'); }
+  if (ev.altKey) { parts.push('Alt'); }
+  parts.push(ev.key);
+  return parts.join(' ');
+}
