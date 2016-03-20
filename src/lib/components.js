@@ -71,49 +71,37 @@ export const OutlineNode = React.createClass({
     });
 
     return (
-      <li className={className}
-          draggable={draggable}
-          onDragStart={this.onDragStart}
-          onDragEnter={this.onDragEnter}
-          onDragOver={this.onDragOver}
-          onDragLeave={this.onDragLeave}
-          onDragEnd={this.onDragEnd}
-          onDrop={this.onDrop}>
+      <li className={className} draggable={draggable}
+          onDragStart={this.onDragStart} onDragEnter={this.onDragEnter}
+          onDragOver={this.onDragOver} onDragLeave={this.onDragLeave}
+          onDragEnd={this.onDragEnd} onDrop={this.onDrop}>
 
-        <div className="content">
-
-          <button className="collapse"
-                  disabled={!hasChildren}
-                  onClick={this.onToggleCollapsed}>
-            &nbsp;
-          </button>
-
-          {!selected ? null :
+        {selected ?
+          <div className="content">
             <button className="delete"
-                    onClick={this.onDelete}>X</button>}
-
-          {selected ?
-            <input className="editor"
-                   autoFocus={true}
-                   ref={moveCursorToEnd}
-                   type="text"
-                   size="50"
-                   value={editorValue}
+                    onClick={this.onDelete}>X</button>
+            <input className="editor" autoFocus={true} ref={moveCursorToEnd}
+                   type="text" size="50" value={editorValue}
                    onKeyDown={this.onEditorKeyDown}
                    onKeyUp={this.onEditorKeyUp}
                    onBlur={this.onEditorBlur}
                    onChange={this.onEditorChange} />
-            :
+          </div>
+          :
+          <div className="content">
+            <button className="collapse" disabled={!hasChildren}
+                    onClick={this.onToggleCollapsed}>
+              &nbsp;
+            </button>
             <span className="title"
-                  onClick={this.onSelectionClick}>{title}</span>}
-
-        </div>
+                  onClick={this.onSelectionClick}>{title}</span>
+          </div>
+        }
 
         {!isCollapsed && hasChildren &&
-          <OutlineTree dispatch={dispatch}
-                       path={path + '.children.'}
-                       meta={meta} root={root}
-                       nodes={node.get('children')} />}
+          <OutlineTree dispatch={dispatch} meta={meta} root={root}
+                       nodes={node.get('children')}
+                       path={path + '.children.'} />}
 
       </li>
     );
