@@ -1,6 +1,9 @@
 function action(type, fn, props) {
-  const creator = (...args) => ({...fn(...args), type});
-  exports[type] = Object.assign(creator, {type}, props || {});
+  return exports[type] = Object.assign(
+    (...args) => ({ type, payload: { ...fn(...args) } }),
+    { type },
+    props || {}
+  );
 }
 
 function symbols(...items) {

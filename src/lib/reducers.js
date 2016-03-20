@@ -3,36 +3,33 @@ import Immutable, { List } from 'immutable';
 
 import * as actions from './actions';
 
-export function nodes(state=[], action) {
-  switch (action.type) {
+export function nodes(state=[], {type, payload}) {
+  switch (type) {
     case actions.setNodeAttribute.type:
-      return nodes_setNodeAttribute(state, action);
+      return nodes_setNodeAttribute(state, payload);
     case actions.insertNode.type:
-      return nodes_insertNode(state, action);
+      return nodes_insertNode(state, payload);
     case actions.deleteNode.type:
-      return nodes_deleteNode(state, action);
+      return nodes_deleteNode(state, payload);
     case actions.moveNode.type:
-      return nodes_moveNode(state, action);
+      return nodes_moveNode(state, payload);
     default:
       return state;
   }
 }
 
-function nodes_setNodeAttribute(state, action) {
-  const { name, value } = action;
-  const path = action.path.split('.');
-  return state.updateIn(path, node => node.set(name, value));
+function nodes_setNodeAttribute(state, {name, value, path}) {
+  return state.updateIn(path.split('.'), node => node.set(name, value));
 }
 
-function nodes_insertNode(state, action) {
-  const { node, position } = action;
-  const toPath = action.toPath.split('.');
+function nodes_insertNode(state, {node, position, toPath}) {
+  const toPathParts = toPath.split('.');
 
   // Insert the node into the new position...
   if (position == actions.moveNode.positions.ADOPT ||
       position == actions.moveNode.positions.ADOPT_LAST) {
     // Adopt the node into parent, creating the child list if necessary.
-    return state.updateIn(toPath, parent => {
+    return state.updateIn(toPathParts, parent => {
       if (!parent.has('children')) {
         return parent.set('children', List([node]));
       } else if (position === actions.moveNode.positions.ADOPT) {
@@ -43,14 +40,14 @@ function nodes_insertNode(state, action) {
     });
   }
 
-  // Insert node before or after toPath, depending on action position
-  const index = parseInt(toPath.pop()) +
+  // Insert node before or after toPathParts, depending on action position
+  const index = parseInt(toPathParts.pop()) +
                 ((position == actions.moveNode.positions.BEFORE) ? 0 : 1);
-  return state.updateIn(toPath, nodes => nodes.splice(index, 0, node));
+  return state.updateIn(toPathParts, nodes => nodes.splice(index, 0, node));
 }
 
-function nodes_deleteNode(state, action) {
-  const path = action.path.split('.');
+function nodes_deleteNode(state, payload) {
+  const path = payload.path.split('.');
   const index = path.pop();
   if (path.length === 0) {
     // At the outline root, so we only need to splice.
@@ -66,21 +63,20 @@ function nodes_deleteNode(state, action) {
   );
 }
 
-function nodes_moveNode(state, action) {
-  const position = action.position;
-  const fromPath = action.fromPath.split('.');
-  const toPath = action.toPath.split('.');
+function nodes_moveNode(state, { position, fromPath, toPath }) {
+  const fromPathParts = fromPath.split('.');
+  const toPathParts = toPath.split('.');
 
   // Grab the node from the tree.
-  const node = state.getIn(fromPath);
+  const node = state.getIn(fromPathParts);
 
   // HACK: Set the node null to mark for deletion. Doing this because I'm
-  // too lazy to recalculate toPath to compensate for the missing node.
+  // too lazy to recalculate toPathParts to compensate for the missing node.
   // Might discover this is regrettably expensive, later.
-  state = state.setIn(fromPath, null);
+  state = state.setIn(fromPathParts, null);
 
   // Perform the insertion / copy of the node.
-  state = nodes_insertNode(state, {toPath: action.toPath, node, position});
+  state = nodes_insertNode(state, { toPath: toPath, node, position });
 
   // Omit any nodes marked to be deleted.
   return state.update(omitNullChildNodes);
@@ -97,6 +93,4 @@ function omitNullChildNodes(children) {
   });
 }
 
-export default combineReducers({
-  nodes
-});
+export default combineReducers({ nodes });
