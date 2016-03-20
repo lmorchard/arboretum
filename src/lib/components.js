@@ -7,8 +7,10 @@ import Immutable, { List, Map } from 'immutable';
 import { setNodeAttribute, insertNode, deleteNode, moveNode, selectNode,
          clearSelection } from './actions';
 
-import { getNextNodePath, getPreviousNodePath, getNextSiblingPath,
-         getPreviousSiblingPath, splitPath, keyEvent } from './utils';
+import { getParentNodePath, getNextNodePath, getPreviousNodePath,
+         getNextSiblingPath, getPreviousSiblingPath, splitPath,
+         keyEvent } from './utils';
+
 
 export const Outline = connect(state => ({
   meta: state.meta,
@@ -19,6 +21,7 @@ export const Outline = connect(state => ({
                  path="" />
 );
 
+
 export const OutlineTree = (props) =>
   <ul className="outline">
     {props.nodes.map((node, index) =>
@@ -27,23 +30,18 @@ export const OutlineTree = (props) =>
     )}
   </ul>;
 
+
 export const OutlineNode = React.createClass({
   getInitialState() {
     const { node } = this.props;
     return {
-      editorValue: node.get('title'),
       dragging: false,
       positionPreview: null
     };
   },
-  componentWillReceiveProps(nextProps) {
-    if (this.props.node != nextProps.node) {
-      this.setState({ editorValue: nextProps.node.get('title') });
-    }
-  },
   render() {
     const { dispatch, meta, root, node, path } = this.props;
-    const { positionPreview, editorValue, dragging } = this.state;
+    const { positionPreview, dragging } = this.state;
 
     // HACK: Disable dragging when any node is edited.
     // On Firefox, input fields don't receive mouse clicks
@@ -51,8 +49,9 @@ export const OutlineNode = React.createClass({
     //
     // https://bugzilla.mozilla.org/show_bug.cgi?id=800050
     // https://bugzilla.mozilla.org/show_bug.cgi?id=1189486
-    const selected = node.get('selected');
     const draggable = !meta.get('selected');
+
+    const selected = node.get('selected');
     const hasChildren = node.has('children');
     const isCollapsed = !!node.get('collapsed');
 
@@ -81,21 +80,13 @@ export const OutlineNode = React.createClass({
 
         {selected ?
           <div className="content">
-            <button className="delete"
-                    onClick={this.onDelete}>X</button>
-            <input className="editor" autoFocus={true} ref={moveCursorToEnd}
-                   type="text" size="50" value={editorValue}
-                   onKeyDown={this.onEditorKeyDown}
-                   onKeyUp={this.onEditorKeyUp}
-                   onBlur={this.onEditorBlur}
-                   onChange={this.onEditorChange} />
+            <button className="delete" onClick={this.onDelete}>X</button>
+            <OutlineNodeEditor {...this.props} />
           </div>
           :
           <div className="content">
             <button className="collapse" disabled={!hasChildren}
-                    onClick={this.onToggleCollapsed}>
-              &nbsp;
-            </button>
+                    onClick={this.onToggleCollapsed}>&nbsp;</button>
             <span className="title"
                   onClick={this.onSelectionClick}>{title}</span>
           </div>
@@ -112,6 +103,7 @@ export const OutlineNode = React.createClass({
   onSelectionClick(ev) {
     const { dispatch, path } = this.props;
     dispatch(selectNode(path));
+    return stahp(ev);
   },
   onDelete(ev) {
     const { dispatch, path } = this.props;
@@ -122,113 +114,6 @@ export const OutlineNode = React.createClass({
     const { dispatch, node, path } = this.props;
     dispatch(setNodeAttribute(path, 'collapsed', !node.get('collapsed')));
     return stahp(ev);
-  },
-  onEditorKeyDown(ev) {
-    switch (keyEvent(ev)) {
-      case 'Shift Tab':        return this.onEditorPromoteNode(ev);
-      case 'Tab':              return this.onEditorDemoteNode(ev);
-      case 'Shift ArrowLeft':  return this.onEditorPromoteNode(ev);
-      case 'Shift ArrowRight': return this.onEditorDemoteNode(ev);
-      case 'Shift ArrowUp':    return this.onEditorMoveNodeUp(ev);
-      case 'Shift ArrowDown':  return this.onEditorMoveNodeDown(ev);
-      case 'ArrowUp':          return this.onEditorSelectUp(ev);
-      case 'ArrowDown':        return this.onEditorSelectDown(ev);
-    }
-  },
-  onEditorKeyUp(ev) {
-    switch (keyEvent(ev)) {
-      case 'Enter':       return this.onEditorCommit(ev);
-      case 'Shift Enter': return this.onEditorCommit(ev, 'ADOPT');
-      case 'Escape':      return this.onEditorCancel(ev);
-    }
-  },
-  onEditorCommit(ev, newPosition='AFTER') {
-    const { dispatch, root, nodes, path } = this.props;
-    if (this.resolveEditor()) {
-      const newNode = new Map({ selected: true, title: '' });
-      dispatch(insertNode(newNode, path, moveNode.positions[newPosition]));
-    }
-    return stahp(ev);
-  },
-  onEditorCancel(ev) {
-    this.resolveEditor(true);
-    return stahp(ev);
-  },
-  onEditorMoveNodeDown(ev) {
-    const { dispatch, root, nodes, path } = this.props;
-    const newPath = getNextSiblingPath(root, path);
-    if (newPath) {
-      this.resolveEditor(false, false, true);
-      dispatch(moveNode(path, newPath, moveNode.positions.AFTER));
-    }
-    return stahp(ev);
-  },
-  onEditorMoveNodeUp(ev) {
-    const { dispatch, root, nodes, path } = this.props;
-    const newPath = getPreviousSiblingPath(root, path);
-    if (newPath) {
-      this.resolveEditor(false, false, true);
-      dispatch(moveNode(path, newPath, moveNode.positions.BEFORE));
-    }
-    return stahp(ev);
-  },
-  onEditorSelectUp(ev) {
-    const { dispatch, root, nodes, path } = this.props;
-    const newPath = getPreviousNodePath(root, path);
-    if (newPath) {
-      this.resolveEditor();
-      dispatch(selectNode(newPath));
-    }
-    return stahp(ev);
-  },
-  onEditorSelectDown(ev) {
-    const { dispatch, root, nodes, path } = this.props;
-    const newPath = getNextNodePath(root, path);
-    if (newPath) {
-      this.resolveEditor();
-      dispatch(selectNode(newPath));
-    }
-    return stahp(ev);
-  },
-  onEditorPromoteNode(ev) {
-    const { dispatch, path } = this.props;
-    // On Shift-Tab, move the node to after its parent.
-    var parentPath = splitPath(path).slice(0, -2).join('.');
-    if (parentPath) {
-      this.resolveEditor(false, false, true);
-      dispatch(moveNode(path, parentPath, moveNode.positions.AFTER));
-    }
-    return stahp(ev);
-  },
-  onEditorDemoteNode(ev) {
-    const { dispatch, siblings, path } = this.props;
-    // On Tab, adopt the node as last child of previous sibling.
-    var parts = splitPath(path);
-    var index = parseInt(parts.pop());
-    if (index - 1 >= 0) {
-      var newPath = parts.concat([index - 1]).join('.');
-      this.resolveEditor(false, false, true);
-      dispatch(moveNode(path, newPath, moveNode.positions.ADOPT_LAST));
-    }
-    return stahp(ev);
-  },
-  onEditorChange(ev) {
-    this.setState({ editorValue: ev.target.value });
-  },
-  onEditorBlur(ev) {
-    const { dispatch, path } = this.props;
-    this.resolveEditor();
-  },
-  resolveEditor(discard=false, deselect=true, preserveEmpty=false) {
-    const { dispatch, node, path } = this.props;
-    const { editorValue } = this.state;
-    if (!preserveEmpty && editorValue == '') {
-      dispatch(deleteNode(path));
-    } else if (!discard && editorValue !== this.props.node.get('title')) {
-      dispatch(setNodeAttribute(path, 'title', editorValue));
-    }
-    if (deselect) { dispatch(clearSelection()); }
-    return editorValue;
   },
   onDragStart(ev) {
     const { path, node } = this.props;
@@ -274,12 +159,140 @@ export const OutlineNode = React.createClass({
     const data = JSON.parse(ev.dataTransfer.getData('text'));
     // Ensure the drop target is not the dragged node or a child
     if (this.props.path.indexOf(draggedPath) !== 0) {
-      dispatch(moveNode(data.path, this.props.path, this.state.positionPreview))
+      dispatch(moveNode(data.path, this.props.path,
+                        this.state.positionPreview));
     }
     this.setState({ positionPreview: null });
     return stahp(ev);
   }
 });
+
+
+export const OutlineNodeEditor = React.createClass({
+  getInitialState() {
+    const { node } = this.props;
+    return { value: node.get('title') };
+  },
+  componentWillReceiveProps(nextProps) {
+    if (this.props.node != nextProps.node) {
+      this.setState({ value: nextProps.node.get('title') });
+    }
+  },
+  render() {
+    const { value } = this.state;
+    return <input className="editor" autoFocus={true} type="text" size="50"
+                  value={value} ref={moveCursorToEnd}
+                  onKeyDown={this.onKeyDown}
+                  onKeyUp={this.onKeyUp}
+                  onBlur={this.onBlur}
+                  onChange={this.onChange} />;
+  },
+  resolve(discard=false, deselect=true, preserveEmpty=false) {
+    const { dispatch, node, path } = this.props;
+    const { value } = this.state;
+    if (!preserveEmpty && value == '') {
+      dispatch(deleteNode(path));
+    } else if (!discard && value !== this.props.node.get('title')) {
+      dispatch(setNodeAttribute(path, 'title', value));
+    }
+    if (deselect) { dispatch(clearSelection()); }
+    return value;
+  },
+  onChange(ev) {
+    this.setState({ value: ev.target.value });
+  },
+  onBlur(ev) {
+    // FIXME: This prevents the delete button from working, because focus is
+    // blurred by the click and the button disappears before it gets the click.
+    // this.resolve();
+  },
+  onKeyDown(ev) {
+    switch (keyEvent(ev)) {
+      case 'Shift Tab':        return this.onPromoteNode(ev);
+      case 'Tab':              return this.onDemoteNode(ev);
+      case 'Shift ArrowLeft':  return this.onPromoteNode(ev);
+      case 'Shift ArrowRight': return this.onDemoteNode(ev);
+      case 'Shift ArrowUp':    return this.onMoveNodeUp(ev);
+      case 'Shift ArrowDown':  return this.onMoveNodeDown(ev);
+      case 'ArrowUp':          return this.onSelectUp(ev);
+      case 'ArrowDown':        return this.onSelectDown(ev);
+    }
+  },
+  onKeyUp(ev) {
+    switch (keyEvent(ev)) {
+      case 'Enter':       return this.onCommit(ev);
+      case 'Shift Enter': return this.onCommit(ev, 'ADOPT');
+      case 'Escape':      return this.onCancel(ev);
+    }
+  },
+  onCommit(ev, newPosition='AFTER') {
+    const { dispatch, root, nodes, path } = this.props;
+    if (this.resolve()) {
+      const newNode = new Map({ selected: true, title: '' });
+      dispatch(insertNode(newNode, path, moveNode.positions[newPosition]));
+    }
+    return stahp(ev);
+  },
+  onCancel(ev) {
+    this.resolve(true);
+    return stahp(ev);
+  },
+  onSelectUp(ev) {
+    const { dispatch, root, path } = this.props;
+    const newPath = getPreviousNodePath(root, path);
+    if (newPath) {
+      this.resolve();
+      dispatch(selectNode(newPath));
+    }
+    return stahp(ev);
+  },
+  onSelectDown(ev) {
+    const { dispatch, root, path } = this.props;
+    const newPath = getNextNodePath(root, path);
+    if (newPath) {
+      this.resolve();
+      dispatch(selectNode(newPath));
+    }
+    return stahp(ev);
+  },
+  onMoveNodeDown(ev) {
+    const { dispatch, root, path } = this.props;
+    const newPath = getNextSiblingPath(root, path);
+    if (newPath) {
+      this.resolve(false, false, true);
+      dispatch(moveNode(path, newPath, moveNode.positions.AFTER));
+    }
+    return stahp(ev);
+  },
+  onMoveNodeUp(ev) {
+    const { dispatch, root, path } = this.props;
+    const newPath = getPreviousSiblingPath(root, path);
+    if (newPath) {
+      this.resolve(false, false, true);
+      dispatch(moveNode(path, newPath, moveNode.positions.BEFORE));
+    }
+    return stahp(ev);
+  },
+  onPromoteNode(ev) {
+    const { dispatch, root, path } = this.props;
+    const newPath = getParentNodePath(root, path);
+    if (newPath) {
+      this.resolve(false, false, true);
+      dispatch(moveNode(path, newPath, moveNode.positions.AFTER));
+    }
+    return stahp(ev);
+  },
+  onDemoteNode(ev) {
+    const { dispatch, root, path } = this.props;
+    const newPath = getPreviousSiblingPath(root, path);
+    if (newPath) {
+      this.resolve(false, false, true);
+      dispatch(moveNode(path, newPath, moveNode.positions.ADOPT_LAST));
+    }
+    return stahp(ev);
+  }
+});
+
 
 function stahp(ev) {
   ev.stopPropagation();
