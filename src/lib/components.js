@@ -210,6 +210,8 @@ export const OutlineNodeEditor = React.createClass({
     switch (keyEvent(ev)) {
       case 'Shift Tab':        return this.onPromoteNode(ev);
       case 'Tab':              return this.onDemoteNode(ev);
+      case 'Ctrl ArrowLeft':   return this.onCollapse(ev);
+      case 'Ctrl ArrowRight':  return this.onReveal(ev);
       case 'Shift ArrowLeft':  return this.onPromoteNode(ev);
       case 'Shift ArrowRight': return this.onDemoteNode(ev);
       case 'Shift ArrowUp':    return this.onMoveNodeUp(ev);
@@ -235,6 +237,16 @@ export const OutlineNodeEditor = React.createClass({
   },
   onCancel(ev) {
     this.resolve(true);
+    return stahp(ev);
+  },
+  onCollapse(ev) {
+    const { dispatch, path } = this.props;
+    dispatch(setNodeAttribute(path, 'collapsed', true));
+    return stahp(ev);
+  },
+  onReveal(ev) {
+    const { dispatch, path } = this.props;
+    dispatch(setNodeAttribute(path, 'collapsed', false));
     return stahp(ev);
   },
   onSelectUp(ev) {
