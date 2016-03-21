@@ -39,7 +39,8 @@ function nodes_setCollapsed(state, {payload: {path, value, recursive}}) {
     if (recursive && node.has('children')) {
       node = node.set('children', node.get('children').map(updater));
     }
-    return value ? node.set('collapsed', true) : node.remove('collapsed');
+    return value && node.has('children') ?
+      node.set('collapsed', true) : node.remove('collapsed');
   };
   return state.updateIn(path.split('.'), updater);
 }
