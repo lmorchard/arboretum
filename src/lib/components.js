@@ -5,7 +5,7 @@ import classNames from 'classnames';
 import Immutable, { List, Map } from 'immutable';
 
 import { setNodeAttribute, insertNode, deleteNode, moveNode, selectNode,
-         clearSelection, collapseRecursively } from './actions';
+         clearSelection, setCollapsed } from './actions';
 
 import { getParentNodePath, getNextNodePath, getPreviousNodePath,
          getNextSiblingPath, getPreviousSiblingPath, splitPath,
@@ -112,11 +112,8 @@ export const OutlineNode = React.createClass({
   },
   onToggleCollapsed(ev) {
     const { dispatch, node, path } = this.props;
-    if (ev.ctrlKey) {
-      dispatch(collapseRecursively(path, !node.get('collapsed')));
-    } else {
-      dispatch(setNodeAttribute(path, 'collapsed', !node.get('collapsed')));
-    }
+    const recursive = ev.ctrlKey;
+    dispatch(setCollapsed(path, !node.get('collapsed'), recursive));
     return stahp(ev);
   },
   onDragStart(ev) {
@@ -216,8 +213,8 @@ export const OutlineNodeEditor = React.createClass({
       case 'Tab':              return this.onDemoteNode(ev);
       case 'Ctrl ArrowLeft':   return this.onCollapse(ev, true);
       case 'Ctrl ArrowRight':  return this.onCollapse(ev, false);
-      case 'Ctrl ArrowUp':     return this.onCollapseRecursively(ev, true);
-      case 'Ctrl ArrowDown':   return this.onCollapseRecursively(ev, false);
+      case 'Ctrl ArrowUp':     return this.onCollapse(ev, true, true);
+      case 'Ctrl ArrowDown':   return this.onCollapse(ev, false, true);
       case 'Shift ArrowLeft':  return this.onPromoteNode(ev);
       case 'Shift ArrowRight': return this.onDemoteNode(ev);
       case 'Shift ArrowUp':    return this.onMoveNodeUp(ev);
@@ -245,14 +242,9 @@ export const OutlineNodeEditor = React.createClass({
     this.resolve(true);
     return stahp(ev);
   },
-  onCollapse(ev, collapseValue) {
+  onCollapse(ev, collapseValue, recursive) {
     const { dispatch, path } = this.props;
-    dispatch(setNodeAttribute(path, 'collapsed', collapseValue));
-    return stahp(ev);
-  },
-  onCollapseRecursively(ev, collapseValue) {
-    const { dispatch, path } = this.props;
-    dispatch(collapseRecursively(path, collapseValue));
+    dispatch(setCollapsed(path, collapseValue, recursive));
     return stahp(ev);
   },
   onSelectUp(ev) {
