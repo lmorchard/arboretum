@@ -1,6 +1,4 @@
-import React, { Component, PropTypes } from 'react';
-import ReactDOM from 'react-dom';
-import { connect } from 'react-redux';
+import React, { Component } from 'react';
 import classNames from 'classnames';
 import Immutable, { List, Map } from 'immutable';
 
@@ -12,21 +10,15 @@ import { getParentNodePath, getNextNodePath, getPreviousNodePath,
          keyEvent } from './utils';
 
 
-export const Outline = connect(state => ({
-  meta: state.meta,
-  nodes: state.nodes
-}))(
-  ({ dispatch, meta, nodes }) =>
-    <OutlineTree dispatch={dispatch} meta={meta} root={nodes} nodes={nodes}
-                 path="" />
-);
+export const Outline = ({dispatch, meta, nodes}) =>
+  <OutlineTree {...{dispatch, meta, nodes}} root={nodes} />
 
 
 export const OutlineTree = (props) =>
   <ul className="outline">
     {props.nodes.map((node, index) =>
       <OutlineNode {...props} node={node} siblings={props.nodes}
-                   key={index} path={props.path + index} />
+                   key={index} path={(props.path || "") + index} />
     )}
   </ul>;
 
@@ -297,6 +289,9 @@ export const OutlineNodeEditor = React.createClass({
     const newPath = getPreviousSiblingPath(root, path);
     if (newPath) {
       this.resolve(false, false, true);
+      if (root.getIn(newPath, 'collapsed')) {
+        dispatch(setCollapsed(newPath, false, false));
+      }
       dispatch(moveNode(path, newPath, insertNode.positions.ADOPT_LAST));
     }
     return stahp(ev);
