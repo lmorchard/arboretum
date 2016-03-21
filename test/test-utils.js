@@ -81,70 +81,93 @@ describe('utils', function () {
       var result = Utils.getNodeContext(this.state, path);
       expect(result).to.deep.equal(expected);
     })
-  })
+  });
+
+  function commonSiblingPathTest (inReverse, state, expectedSiblings) {
+    var traversal = inReverse ?
+      Utils.getPreviousSiblingPath :
+      Utils.getNextSiblingPath;
+    var siblingList;
+    while (siblingList = expectedSiblings.shift()) {
+      if (inReverse) { siblingList.reverse(); }
+      var current, expected, result;
+      current = siblingList.shift();
+      while (siblingList.length) {
+        expected = siblingList.shift();
+        result = traversal(state, current);
+        expect(result).to.equal(expected);
+        current = expected;
+      }
+      result = traversal(state, current);
+      expect(result).to.equal(null);
+    }
+  }
 
   describe('getNextSiblingPath', function () {
     it('should find the path to the next sibling', function () {
-      var siblingList;
-      while (siblingList = this.expectedSiblings.shift()) {
-        var current, expected, result;
-        current = siblingList.shift();
-        while (siblingList.length) {
-          expected = siblingList.shift();
-          result = Utils.getNextSiblingPath(this.state, current);
-          expect(result).to.equal(expected);
-          current = expected;
-        }
-        result = Utils.getNextSiblingPath(this.state, current);
-        expect(result).to.equal(null);
-      }
+      commonSiblingPathTest(false, this.state, this.expectedSiblings);
     });
   });
 
   describe('getPreviousSiblingPath', function () {
     it('should find the path to the previous sibling', function () {
-      var siblingList;
-      while (siblingList = this.expectedSiblings.shift()) {
-        siblingList.reverse();
-        var current, expected, result;
-        current = siblingList.shift();
-        while (siblingList.length) {
-          expected = siblingList.shift();
-          result = Utils.getPreviousSiblingPath(this.state, current);
-          expect(result).to.equal(expected);
-          current = expected;
-        }
-        result = Utils.getPreviousSiblingPath(this.state, current);
-        expect(result).to.equal(null);
-      }
+      commonSiblingPathTest(true, this.state, this.expectedSiblings);
     });
   });
 
+  function commonNodePathTest (inReverse, state, expectedSeries) {
+    var current, expected, result;
+
+    var traversal = (inReverse) ?
+      Utils.getPreviousNodePath : Utils.getNextNodePath;
+
+    if (inReverse) { expectedSeries.reverse(); }
+
+    current = expectedSeries.shift();
+    while (expectedSeries.length) {
+      expected = expectedSeries.shift();
+      result = traversal(state, current);
+      expect(result).to.equal(expected);
+      current = expected;
+    }
+  }
+
   describe('getNextNodePath', function () {
+
     it('should find the path to the next node', function () {
-      var current, expected, result;
-      current = this.expectedSeries.shift();
-      while (this.expectedSeries.length) {
-        expected = this.expectedSeries.shift();
-        result = Utils.getNextNodePath(this.state, current);
-        expect(result).to.equal(expected);
-        current = expected;
-      }
+      commonNodePathTest(false, this.state, this.expectedSeries);
     })
+
+    it('should skip children of collapsed nodes', function () {
+      let state = this.state;
+      ['1', '3.children.0'].forEach(path => {
+        state = state.updateIn(
+          path.split('.'),
+          n => n.set('collapsed', true));
+      });
+      commonNodePathTest(false, state,
+        ['0', '1', '2', '3', '3.children.0', '4']);
+    });
+
   });
 
   describe('getPreviousNodePath', function () {
+
     it('should find the path to the previous node', function () {
-      var current, expected, result;
-      this.expectedSeries.reverse();
-      current = this.expectedSeries.shift();
-      while (this.expectedSeries.length) {
-        expected = this.expectedSeries.shift();
-        result = Utils.getPreviousNodePath(this.state, current);
-        expect(result).to.equal(expected);
-        current = expected;
-      }
-    })
+      commonNodePathTest(true, this.state, this.expectedSeries);
+    });
+
+    it('should skip children of collapsed nodes', function () {
+      let state = this.state;
+      ['1', '3.children.0'].forEach(path => {
+        state = state.updateIn(
+          path.split('.'),
+          n => n.set('collapsed', true));
+      });
+      commonNodePathTest(true, state,
+        ['0', '1', '2', '3', '3.children.0', '4']);
+    });
+
   });
 
 });

@@ -74,7 +74,8 @@ export function getPreviousNodePath (state, path) {
 
   // Step into previous sibling, or the deepest last child.
   var step = key.concat([index - 1]);
-  while (state.hasIn(step.concat(['children']))) {
+  while (!state.getIn(step.concat(['collapsed'])) &&
+         state.hasIn(step.concat(['children']))) {
     var children = state.getIn(step.concat(['children']));
     step = step.concat(['children', String(children.size - 1)]);
   }
@@ -86,7 +87,8 @@ export function getNextNodePath (state, path) {
   var key = splitPath(path);
 
   // Walk down into children
-  if (state.hasIn(key.concat(['children']))) {
+  if (!state.getIn(key.concat(['collapsed'])) &&
+      state.hasIn(key.concat(['children']))) {
     return key.join('.') + '.children.0';
   }
 
