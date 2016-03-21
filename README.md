@@ -4,10 +4,6 @@ An outliner made with React and Redux
 
 ## TODO
 
-* Open /close all children
-  * With shift-click on arrow
-  * With Control-Up/Down in editor
-
 * Support multiple formats
   * JSON
   * Markdown
