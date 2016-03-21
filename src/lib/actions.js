@@ -2,6 +2,7 @@ import { actions, symbols } from './utils';
 
 module.exports = actions({
   setNodeAttribute: (path, name, value) => ({path, name, value}),
+  collapseRecursively: (path, collapse) => ({path, collapse}),
   deleteNode: (path) => ({path}),
   selectNode: (path) => ({path}),
   clearSelection: () => ({}),

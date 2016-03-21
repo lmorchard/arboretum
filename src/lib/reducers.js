@@ -2,8 +2,8 @@ import { combineReducers } from 'redux';
 import Immutable, { List, Map } from 'immutable';
 import { handleActions } from 'redux-actions';
 
-import { setNodeAttribute, insertNode, deleteNode, selectNode, clearSelection,
-         moveNode } from './actions';
+import { setNodeAttribute, insertNode, deleteNode, selectNode,
+         clearSelection, moveNode, collapseRecursively } from './actions';
 import { splitPath } from './utils';
 
 export default combineReducers({
@@ -13,6 +13,7 @@ export default combineReducers({
   }, Map()),
   nodes: handleActions({
     [setNodeAttribute.type]: nodes_setNodeAttribute,
+    [collapseRecursively.type]: nodes_collapseRecursively,
     [insertNode.type]: nodes_insertNode,
     [deleteNode.type]: nodes_deleteNode,
     [selectNode.type]: nodes_selectNode,
@@ -33,15 +34,26 @@ function nodes_setNodeAttribute(state, {payload: {name, value, path}}) {
   return state.updateIn(path.split('.'), node => node.set(name, value));
 }
 
+function nodes_collapseRecursively(state, {payload: {path, collapse}}) {
+  const updater = node => {
+    if (node.has('children')) {
+      node = node.set('children', node.get('children').map(updater));
+    }
+    return collapse ? node.set('collapsed', true) :
+                      node.remove('collapsed');
+  };
+  return state.updateIn(path.split('.'), updater);
+}
+
 function nodes_clearSelection(state) {
-  const deselectNode = node => {
+  const updater = node => {
     node = node.remove('selected');
     if (node.has('children')) {
-      node = node.set('children', node.get('children').map(deselectNode));
+      node = node.set('children', node.get('children').map(updater));
     }
     return node;
   };
-  return state.map(deselectNode);
+  return state.map(updater);
 }
 
 function nodes_selectNode(state, {payload: {path}}) {

@@ -5,7 +5,7 @@ import classNames from 'classnames';
 import Immutable, { List, Map } from 'immutable';
 
 import { setNodeAttribute, insertNode, deleteNode, moveNode, selectNode,
-         clearSelection } from './actions';
+         clearSelection, collapseRecursively } from './actions';
 
 import { getParentNodePath, getNextNodePath, getPreviousNodePath,
          getNextSiblingPath, getPreviousSiblingPath, splitPath,
@@ -210,8 +210,10 @@ export const OutlineNodeEditor = React.createClass({
     switch (keyEvent(ev)) {
       case 'Shift Tab':        return this.onPromoteNode(ev);
       case 'Tab':              return this.onDemoteNode(ev);
-      case 'Ctrl ArrowLeft':   return this.onCollapse(ev);
-      case 'Ctrl ArrowRight':  return this.onReveal(ev);
+      case 'Ctrl ArrowLeft':   return this.onCollapse(ev, true);
+      case 'Ctrl ArrowRight':  return this.onCollapse(ev, false);
+      case 'Ctrl ArrowUp':     return this.onCollapseRecursively(ev, true);
+      case 'Ctrl ArrowDown':   return this.onCollapseRecursively(ev, false);
       case 'Shift ArrowLeft':  return this.onPromoteNode(ev);
       case 'Shift ArrowRight': return this.onDemoteNode(ev);
       case 'Shift ArrowUp':    return this.onMoveNodeUp(ev);
@@ -239,14 +241,14 @@ export const OutlineNodeEditor = React.createClass({
     this.resolve(true);
     return stahp(ev);
   },
-  onCollapse(ev) {
+  onCollapse(ev, collapseValue) {
     const { dispatch, path } = this.props;
-    dispatch(setNodeAttribute(path, 'collapsed', true));
+    dispatch(setNodeAttribute(path, 'collapsed', collapseValue));
     return stahp(ev);
   },
-  onReveal(ev) {
+  onCollapseRecursively(ev, collapseValue) {
     const { dispatch, path } = this.props;
-    dispatch(setNodeAttribute(path, 'collapsed', false));
+    dispatch(collapseRecursively(path, collapseValue));
     return stahp(ev);
   },
   onSelectUp(ev) {
