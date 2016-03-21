@@ -112,7 +112,11 @@ export const OutlineNode = React.createClass({
   },
   onToggleCollapsed(ev) {
     const { dispatch, node, path } = this.props;
-    dispatch(setNodeAttribute(path, 'collapsed', !node.get('collapsed')));
+    if (ev.ctrlKey) {
+      dispatch(collapseRecursively(path, !node.get('collapsed')));
+    } else {
+      dispatch(setNodeAttribute(path, 'collapsed', !node.get('collapsed')));
+    }
     return stahp(ev);
   },
   onDragStart(ev) {

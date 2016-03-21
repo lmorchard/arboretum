@@ -47,11 +47,10 @@ function nodes_collapseRecursively(state, {payload: {path, collapse}}) {
 
 function nodes_clearSelection(state) {
   const updater = node => {
-    node = node.remove('selected');
     if (node.has('children')) {
       node = node.set('children', node.get('children').map(updater));
     }
-    return node;
+    return node.remove('selected');
   };
   return state.map(updater);
 }
