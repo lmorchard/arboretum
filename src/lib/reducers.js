@@ -1,6 +1,7 @@
 import Immutable, { List, Map } from 'immutable';
 import { handleActions } from 'redux-actions';
-import { setNodeAttribute, insertNode, deleteNode, selectNode,
+import { loadNodes, setNodeAttribute,
+         insertNode, deleteNode, selectNode,
          clearSelection, moveNode, setCollapsed,
          setStorage, clearStorage } from './actions';
 import { splitPath } from './utils';
@@ -11,6 +12,7 @@ export default {
     [clearSelection.type]: meta_clearSelection,
   }, Map()),
   nodes: handleActions({
+    [loadNodes.type]: nodes_loadNodes,
     [setNodeAttribute.type]: nodes_setNodeAttribute,
     [setCollapsed.type]: nodes_setCollapsed,
     [insertNode.type]: nodes_insertNode,
@@ -39,6 +41,10 @@ function meta_clearSelection(state) {
 
 function meta_selectNode(state, {payload: {path}}) {
   return state.set('selected', path);
+}
+
+function nodes_loadNodes(state, {payload: {data}}) {
+  return Immutable.fromJS(data);
 }
 
 function nodes_setNodeAttribute(state, {payload: {path, name, value}}) {

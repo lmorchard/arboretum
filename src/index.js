@@ -16,14 +16,12 @@ import thunk from 'redux-thunk';
 import promise from 'redux-promise';
 import createLogger from 'redux-logger';
 
-import stringify from 'json-stringify-pretty-compact';
-
 import * as actions from './lib/actions';
 import reducers from './lib/reducers';
 
-import { Outline } from './lib/components';
 import DropboxOAuthConnector from './lib/components/DropboxOAuthConnector';
 import NavBar from './lib/components/NavBar';
+import OutlineApp from './lib/components/OutlineApp';
 
 import * as storages from './lib/storages';
 
@@ -77,22 +75,6 @@ const App = ({children}) => (
     {children}
   </div>
 )
-
-const OutlineApp = connect(({meta, nodes}) => ({meta, nodes}))(React.createClass({
-  render() {
-    const {dispatch, meta, nodes} = this.props;
-    return (
-      <div>
-        <textarea
-          style={{ position: 'absolute', display: 'block', top: 0, bottom: 0,
-                   right: 0, left: '50%', width: '50%' }}
-          readOnly={true}
-          value={stringify(meta.toJS()) + "\n" + stringify(nodes.toJS())} />
-        <Outline {...{dispatch, meta, nodes}} />
-      </div>
-    );
-  }
-}));
 
 ReactDOM.render((
   <Provider store={store}>

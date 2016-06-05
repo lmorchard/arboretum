@@ -1,6 +1,7 @@
 import { actions, symbols } from './utils';
 
 module.exports = actions({
+  loadNodes: (data) => ({data}),
   setNodeAttribute: (path, name, value) => ({path, name, value}),
   setCollapsed: (path, value, recursive) => ({path, value, recursive}),
   deleteNode: (path) => ({path}),
