@@ -1,17 +1,20 @@
+import merge from 'lodash.merge';
+import config from '../config';
+
 import {Storage, clearConnection, persistConnection} from './index';
 import queryString from 'query-string';
 
 export default class DropboxStorage extends Storage {
   static get config() {
-    return {
+    return merge({
       name: 'DropboxStorage',
       appKey: 'dyp7393ezuk7uxn',
       appSecret: 'ukxhh0s0xx23z9w',
       dropboxOAuthURL: 'https://www.dropbox.com/oauth2/authorize',
       apiBase: 'https://api.dropboxapi.com/2/',
       contentBase: 'https://content.dropboxapi.com/2/',
-      redirectURI: 'http://localhost:3001/oauth/dropbox',
-    };
+      redirectURI: 'http://localhost:3001/oauth/dropbox'
+    }, config.storage.dropbox);
   }
 
   static startConnect() {

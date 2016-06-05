@@ -1,9 +1,14 @@
 require('es6-promise').polyfill();
 require('isomorphic-fetch');
 
+import config from './lib/config';
+
 import React from 'react';
 import ReactDOM from 'react-dom';
-import { Router, Route, IndexRoute, Link, browserHistory } from 'react-router';
+
+import { createHistory } from 'history';
+import { Router, Route, IndexRoute, Link, /* browserHistory, */
+         useRouterHistory } from 'react-router';
 import { syncHistoryWithStore, routerReducer,
          routerMiddleware, push } from 'react-router-redux'
 
@@ -33,6 +38,10 @@ const initialData = {
     {title: 'Click here to edit.'}
   ])
 };
+
+const browserHistory = useRouterHistory(createHistory)({
+  basename: config.basePath
+});
 
 const store = createStore(
   combineReducers({

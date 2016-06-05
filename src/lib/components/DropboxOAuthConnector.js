@@ -1,3 +1,5 @@
+import config from '../config';
+
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { setStorage } from '../actions';
