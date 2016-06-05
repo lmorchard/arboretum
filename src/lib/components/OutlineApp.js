@@ -1,11 +1,10 @@
 import React from 'react';
 import { connect } from 'react-redux';
 import { Outline } from '../components';
-import * as storages from '../storages';
 
 import stringify from 'json-stringify-pretty-compact';
 
-const OutlineApp = React.createClass({
+class OutlineApp extends React.Component {
   render() {
     const {dispatch, meta, nodes} = this.props;
     return (
@@ -19,6 +18,8 @@ const OutlineApp = React.createClass({
       </div>
     );
   }
-});
+}
 
-export default connect(({meta, nodes}) => ({meta, nodes}))(OutlineApp);
+export default connect(
+  ({meta, nodes}) => ({meta, nodes})
+)(OutlineApp);
