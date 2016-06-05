@@ -1,0 +1,117 @@
+html,
+body {
+  padding: 0;
+  margin: 0;
+  font: 14px sans-serif;
+}
+#app {
+  padding-top: 3em;
+}
+.navbar {
+  position: fixed;
+  background-color: #fff;
+  top: 0;
+  left: 0;
+  right: 0;
+  margin: 0;
+  min-height: 1.5em;
+  padding: 0.75em;
+  border-bottom: 1px solid #000;
+}
+.navbar.loading {
+  background-color: #ddd;
+  opacity: 0.8;
+}
+.navbar .actions {
+  position: absolute;
+  left: 0.5em;
+}
+.navbar .settings {
+  position: absolute;
+  right: 0.5em;
+}
+.navbar button {
+  margin: 0 0.25em;
+}
+.outline-root {
+  padding: 0.5em;
+  margin: 0 0 0 -2em;
+}
+ul.outline {
+  list-style-type: none;
+  padding: 0;
+  margin: 0 0 0 2em;
+}
+ul.outline li.outline-node {
+  padding: 0;
+  margin: 0;
+  border-top: 1px solid transparent;
+}
+ul.outline li.outline-node .content {
+  width: 99%;
+  display: flex;
+  flex-direction: row;
+  align-content: stretch;
+  justify-content: stretch;
+  align-items: stretch;
+  border: 1px solid transparent;
+}
+ul.outline li.outline-node > .content button {
+  width: 2em;
+}
+button::-moz-focus-inner {
+  border: 0;
+}
+ul.outline li.outline-node > .content button:focus {
+  outline: 0;
+}
+ul.outline li.outline-node > .content button.collapse {
+  border: none;
+  background: none;
+  width: 2em;
+}
+ul.outline li.outline-node > .content button.collapse:before {
+  content: "\26AB";
+}
+ul.outline li.outline-node.has-children > .content button.collapse:before {
+  content: "\25BC";
+}
+ul.outline li.outline-node.has-children.collapsed > .content button.collapse:before {
+  content: "\25B6";
+}
+ul.outline li.outline-node > .content button.delete {
+  display: none;
+}
+ul.outline li.outline-node.selected > .content button.delete {
+  display: block;
+}
+ul.outline li.outline-node span.title {
+  display: block;
+  flex-grow: 1;
+  border: 1px dotted transparent;
+  margin: 0 0.25em 0 0;
+  padding: 0.25em 0.25em;
+}
+ul.outline li.outline-node input.editor {
+  font: 14px sans-serif;
+  display: block;
+  width: 100%;
+  margin: 0 0.25em 0 0;
+  padding: 0.25em 0.25em;
+  border: 1px solid #ccc;
+}
+ul.outline li.outline-node.selected > .content .title {
+  border: 1px dotted #888;
+}
+ul.outline li.outline-node.dragging {
+  opacity: 0.5;
+}
+ul.outline li.outline-node.position-preview-adopt {
+  background-color: #ccc;
+}
+ul.outline li.outline-node.position-preview-before {
+  border-top: 1px solid #ccc;
+}
+ul.outline li.outline-node.position-preview-after {
+  border-bottom: 1px solid #ccc;
+}
