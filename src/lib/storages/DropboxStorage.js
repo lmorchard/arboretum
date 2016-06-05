@@ -36,16 +36,13 @@ export default class DropboxStorage extends Storage {
     const {apiBase} = this.config;
     const {accessToken} = this.options;
 
-    return fetch(apiBase + 'users/get_current_account', {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json',
-        'Authorization': 'Bearer ' + accessToken
-      },
-      mode: 'cors'
-    }).then(response => response.json()).then(data => {
-      this.account = data;
-      console.log(this.account);
+    return Promise.all([
+      this.list(),
+      this.account()
+    ]).then(results => {
+      const [filelist, account] = results;
+      this.filelist = filelist;
+      this.account = account;
       return this;
     });
   }
@@ -59,6 +56,20 @@ export default class DropboxStorage extends Storage {
       headers: {'Authorization': 'Bearer ' + accessToken},
       mode: 'cors'
     }).then(response => clearConnection());
+  }
+
+  account() {
+    const {apiBase} = this.config;
+    const {accessToken} = this.options;
+
+    return fetch(apiBase + 'users/get_current_account', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': 'Bearer ' + accessToken
+      },
+      mode: 'cors'
+    }).then(response => response.json());
   }
 
   list() {
@@ -78,7 +89,9 @@ export default class DropboxStorage extends Storage {
       }),
       mode: 'cors'
     }).then(response => response.json()).then(data => {
-      return data.entries.map(entry => entry.path_display);
+      return data.entries
+        .filter(entry => entry['.tag'] === 'file')
+        .map(entry => entry.path_display.substr(1));
     });
   }
 

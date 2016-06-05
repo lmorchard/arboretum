@@ -2,12 +2,13 @@ import Immutable, { List, Map } from 'immutable';
 import { handleActions } from 'redux-actions';
 import { loadNodes, setNodeAttribute,
          insertNode, deleteNode, selectNode,
-         clearSelection, moveNode, setCollapsed,
+         setFilename, clearSelection, moveNode, setCollapsed,
          setStorage, clearStorage } from './actions';
 import { splitPath } from './utils';
 
 export default {
   meta: handleActions({
+    [setFilename.type]: meta_setFilename,
     [selectNode.type]: meta_selectNode,
     [clearSelection.type]: meta_clearSelection,
   }, Map()),
@@ -33,6 +34,10 @@ function storage_setStorage(state, {payload: {storage}}) {
 
 function storage_clearStorage(state) {
   return null;
+}
+
+function meta_setFilename(state, {payload: {filename}}) {
+  return state.set('filename', filename);
 }
 
 function meta_clearSelection(state) {

@@ -8,7 +8,6 @@ class DropboxOAuthConnector extends React.Component {
   render() {
     return <p>Connecting...</p>;
   }
-
   componentDidMount() {
     const {dispatch} = this.props;
     DropboxStorage.finishConnect().then(storage => {

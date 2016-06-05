@@ -8,12 +8,12 @@ class OutlineApp extends React.Component {
   render() {
     const {dispatch, meta, nodes} = this.props;
     return (
-      <div>
-        <textarea
-          style={{ position: 'absolute', display: 'block', top: 0, bottom: 0,
-                   right: 0, left: '50%', width: '50%' }}
-          readOnly={true}
-          value={stringify(meta.toJS()) + "\n" + stringify(nodes.toJS())} />
+      <div className="outline-root">
+        {/*<textarea
+            style={{ position: 'absolute', display: 'block', top: 0, bottom: 0,
+                     right: 0, left: '50%', width: '50%' }}
+            readOnly={true}
+            value={stringify(meta.toJS()) + "\n" + stringify(nodes.toJS())} />*/}
         <Outline {...{dispatch, meta, nodes}} />
       </div>
     );

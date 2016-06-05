@@ -12,7 +12,7 @@
   "author": "Les Orchard <me@lmorchard.com>",
   "license": "ISC",
   "dependencies": {
-    "classnames": "^2.2.1",
+    "classnames": "^2.2.5",
     "connect-history-api-fallback": "^1.2.0",
     "es6-promise": "^3.1.2",
     "flux": "^2.1.1",

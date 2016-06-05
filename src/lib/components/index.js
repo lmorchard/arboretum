@@ -3,11 +3,11 @@ import classNames from 'classnames';
 import Immutable, { List, Map } from 'immutable';
 
 import { setNodeAttribute, insertNode, deleteNode, moveNode, selectNode,
-         clearSelection, setCollapsed } from './actions';
+         clearSelection, setCollapsed } from '../actions';
 
 import { getParentNodePath, getNextNodePath, getPreviousNodePath,
          getNextSiblingPath, getPreviousSiblingPath, splitPath,
-         keyEvent } from './utils';
+         keyEvent } from '../utils';
 
 
 export const Outline = ({dispatch, meta, nodes}) =>

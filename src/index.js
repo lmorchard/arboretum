@@ -30,24 +30,7 @@ const initialData = {
     selected: null
   }),
   nodes: Immutable.fromJS([
-    {title: "alpha"},
-    {title: "beta", children: [
-      {title: "foo"},
-      {title: "bar", children: [
-        {title: "quux"},
-        {title: "xyzzy"}
-      ]},
-      {title: "baz"}
-    ]},
-    {title: "gamma"},
-    {title: "level1", children: [
-      {title: 'level2', children: [
-        {title: 'level3', children: [
-          {title: 'level4'}
-        ]}
-      ]}
-    ]},
-    {title: 'thud'}
+    {title: 'Click here to edit.'}
   ])
 };
 
