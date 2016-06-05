@@ -1,12 +1,15 @@
 require('es6-promise').polyfill();
+require('isomorphic-fetch');
 
 import React from 'react';
 import ReactDOM from 'react-dom';
+import { Router, Route, Link, browserHistory } from 'react-router';
+import { syncHistoryWithStore, routerReducer } from 'react-router-redux'
 
 import Immutable from 'immutable';
 
 import { connect, Provider } from 'react-redux';
-import { createStore, applyMiddleware } from 'redux';
+import { combineReducers, createStore, applyMiddleware } from 'redux';
 
 import thunk from 'redux-thunk';
 import promise from 'redux-promise';
@@ -17,6 +20,7 @@ import stringify from 'json-stringify-pretty-compact';
 import * as actions from './lib/actions';
 import reducers from './lib/reducers';
 import { Outline } from './lib/components';
+import { DropboxStorage } from './lib/storages';
 
 const initialData = {
   meta: Immutable.fromJS({
@@ -47,12 +51,14 @@ const initialData = {
 const logger = createLogger();
 
 const store = createStore(
-  reducers,
+  combineReducers({...reducers, routing: routerReducer}),
   initialData,
   applyMiddleware(thunk, promise, logger)
 );
 
 window.store = store;
+
+const history = syncHistoryWithStore(browserHistory, store)
 
 const AppRoot = ({dispatch, meta, nodes}) =>
   <div>
@@ -62,13 +68,25 @@ const AppRoot = ({dispatch, meta, nodes}) =>
       readOnly={true}
       value={stringify(meta.toJS()) + "\n" + stringify(nodes.toJS())} />
     <Outline {...{dispatch, meta, nodes}} />
-  </div>
+  </div>;
 
 const App = connect(({meta, nodes}) => ({meta, nodes}))(AppRoot);
 
-ReactDOM.render(
-  <Provider store={store}>
-    <App />
-  </Provider>,
-  document.getElementById('app')
+const OAuthDropbox = () => (
+  <div>
+    <p>HI THERE DROPBOX</p>
+  </div>
 );
+
+ReactDOM.render((
+  <Provider store={store}>
+    <Router history={history}>
+      <Route path="/" component={App}>
+      </Route>
+      <Route path="/oauth/dropbox" component={OAuthDropbox} />
+    </Router>
+  </Provider>,
+), document.getElementById('app'));
+
+const storage = new DropboxStorage();
+window.storage = storage;

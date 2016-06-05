@@ -1,4 +1,3 @@
-import { combineReducers } from 'redux';
 import Immutable, { List, Map } from 'immutable';
 import { handleActions } from 'redux-actions';
 
@@ -6,7 +5,7 @@ import { setNodeAttribute, insertNode, deleteNode, selectNode,
          clearSelection, moveNode, setCollapsed } from './actions';
 import { splitPath } from './utils';
 
-export default combineReducers({
+export default {
   meta: handleActions({
     [selectNode.type]: meta_selectNode,
     [clearSelection.type]: meta_clearSelection,
@@ -20,7 +19,7 @@ export default combineReducers({
     [clearSelection.type]: nodes_clearSelection,
     [moveNode.type]: nodes_moveNode
   }, List())
-});
+};
 
 function meta_clearSelection(state) {
   return state.set('selected', null);

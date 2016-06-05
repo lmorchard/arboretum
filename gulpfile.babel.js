@@ -9,6 +9,7 @@ import deploy from 'gulp-gh-pages';
 import babelify from "babelify";
 import buffer from 'vinyl-buffer';
 import gulpif from 'gulp-if';
+import history from 'connect-history-api-fallback';
 
 const DEBUG = (process.env.NODE_ENV === 'development');
 
@@ -73,6 +74,9 @@ gulp.task('assets', () => {
 gulp.task('connect', () => {
   connect.server({
     root: 'dist',
+    middleware: (connect, opt) => [
+      history({ verbose: true })
+    ],
     livereload: true,
     port: 3001
   });
