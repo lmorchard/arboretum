@@ -10,5 +10,7 @@ module.exports = actions({
     (node, path, position) => ({node, path, position}),
     {positions: symbols('BEFORE', 'AFTER', 'ADOPT', 'ADOPT_LAST')}
   ],
-  moveNode: (fromPath, toPath, position) => ({fromPath, toPath, position})
+  moveNode: (fromPath, toPath, position) => ({fromPath, toPath, position}),
+  setStorage: (storage) => ({storage}),
+  clearStorage: () => ({})
 });

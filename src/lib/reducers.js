@@ -1,8 +1,8 @@
 import Immutable, { List, Map } from 'immutable';
 import { handleActions } from 'redux-actions';
-
 import { setNodeAttribute, insertNode, deleteNode, selectNode,
-         clearSelection, moveNode, setCollapsed } from './actions';
+         clearSelection, moveNode, setCollapsed,
+         setStorage, clearStorage } from './actions';
 import { splitPath } from './utils';
 
 export default {
@@ -18,8 +18,20 @@ export default {
     [selectNode.type]: nodes_selectNode,
     [clearSelection.type]: nodes_clearSelection,
     [moveNode.type]: nodes_moveNode
-  }, List())
+  }, List()),
+  storage: handleActions({
+    [setStorage.type]: storage_setStorage,
+    [clearStorage.type]: storage_clearStorage
+  }, null)
 };
+
+function storage_setStorage(state, {payload: {storage}}) {
+  return storage;
+}
+
+function storage_clearStorage(state) {
+  return null;
+}
 
 function meta_clearSelection(state) {
   return state.set('selected', null);

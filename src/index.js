@@ -3,8 +3,9 @@ require('isomorphic-fetch');
 
 import React from 'react';
 import ReactDOM from 'react-dom';
-import { Router, Route, Link, browserHistory } from 'react-router';
-import { syncHistoryWithStore, routerReducer } from 'react-router-redux'
+import { Router, Route, IndexRoute, Link, browserHistory } from 'react-router';
+import { syncHistoryWithStore, routerReducer,
+         routerMiddleware, push } from 'react-router-redux'
 
 import Immutable from 'immutable';
 
@@ -19,8 +20,12 @@ import stringify from 'json-stringify-pretty-compact';
 
 import * as actions from './lib/actions';
 import reducers from './lib/reducers';
+
 import { Outline } from './lib/components';
-import { DropboxStorage } from './lib/storages';
+import DropboxOAuthConnector from './lib/components/DropboxOAuthConnector';
+import NavBar from './lib/components/NavBar';
+
+import * as storages from './lib/storages';
 
 const initialData = {
   meta: Immutable.fromJS({
@@ -48,45 +53,54 @@ const initialData = {
   ])
 };
 
-const logger = createLogger();
-
 const store = createStore(
-  combineReducers({...reducers, routing: routerReducer}),
+  combineReducers({
+    ...reducers,
+    routing: routerReducer
+  }),
   initialData,
-  applyMiddleware(thunk, promise, logger)
+  applyMiddleware(
+    thunk,
+    promise,
+    routerMiddleware(browserHistory),
+    createLogger()
+  )
 );
-
-window.store = store;
 
 const history = syncHistoryWithStore(browserHistory, store)
 
-const AppRoot = ({dispatch, meta, nodes}) =>
-  <div>
-    <textarea
-      style={{ position: 'absolute', display: 'block', top: 0, bottom: 0,
-               right: 0, left: '50%', width: '50%' }}
-      readOnly={true}
-      value={stringify(meta.toJS()) + "\n" + stringify(nodes.toJS())} />
-    <Outline {...{dispatch, meta, nodes}} />
-  </div>;
+window.store = store;
 
-const App = connect(({meta, nodes}) => ({meta, nodes}))(AppRoot);
-
-const OAuthDropbox = () => (
+const App = ({children}) => (
   <div>
-    <p>HI THERE DROPBOX</p>
+    <NavBar />
+    {children}
   </div>
-);
+)
+
+const OutlineApp = connect(({meta, nodes}) => ({meta, nodes}))(React.createClass({
+  render() {
+    const {dispatch, meta, nodes} = this.props;
+    return (
+      <div>
+        <textarea
+          style={{ position: 'absolute', display: 'block', top: 0, bottom: 0,
+                   right: 0, left: '50%', width: '50%' }}
+          readOnly={true}
+          value={stringify(meta.toJS()) + "\n" + stringify(nodes.toJS())} />
+        <Outline {...{dispatch, meta, nodes}} />
+      </div>
+    );
+  }
+}));
 
 ReactDOM.render((
   <Provider store={store}>
     <Router history={history}>
       <Route path="/" component={App}>
+        <IndexRoute component={OutlineApp} />
+        <Route path="/oauth/dropbox" component={DropboxOAuthConnector} />
       </Route>
-      <Route path="/oauth/dropbox" component={OAuthDropbox} />
     </Router>
   </Provider>,
 ), document.getElementById('app'));
-
-const storage = new DropboxStorage();
-window.storage = storage;
