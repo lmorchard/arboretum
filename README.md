@@ -4,6 +4,8 @@ An outliner made with React and Redux
 
 ## TODO
 
+* Host in Electron for desktop?
+
 * Support multiple formats
   * JSON
   * Markdown
@@ -12,7 +14,7 @@ An outliner made with React and Redux
 
 * Support multiple storage options
   * Localstorage
-  * Dropbox
+  * <strike>Dropbox</strike>
   * Github (repo & gists?)
   * Amazon S3
   * Local file system?
