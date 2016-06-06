@@ -47,6 +47,9 @@ gulp.task('browserify-tests', () => {
 
 function commonBrowserify(sourceName, b, dest='./dist') {
   return b
+    .transform("stringify", {
+      appliesTo: {includeExtensions: ['.txt', '.opml']}
+    })
     .transform("babelify", {presets: ["es2015", "stage-0", "react"]})
     .bundle()
     .pipe(source(sourceName))

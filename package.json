@@ -60,6 +60,7 @@
     "karma-spec-reporter": "0.0.23",
     "mocha": "^2.3.4",
     "redux-devtools": "^2.1.5",
+    "stringify": "^5.1.0",
     "vinyl-buffer": "^1.0.0",
     "vinyl-source-stream": "^1.1.0"
   }

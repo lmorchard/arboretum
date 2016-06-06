@@ -1,6 +1,8 @@
 import { expect } from "chai";
 import * as formats from '../src/lib/formats';
 
+const statesOPML = require('./states.opml');
+
 describe('formats', function () {
 
   describe('JSON', function () {
@@ -23,9 +25,12 @@ describe('formats', function () {
 
   describe('OPML', function () {
     beforeEach(function () {
-      this.format =new formats.OPMLFormat();
+      this.format = new formats.OPMLFormat();
     });
     it('should import', function () {
+      const result = this.format.importContent(statesOPML);
+      console.log(result.querySelector('head'));
+      console.log(result.querySelector('body>outline'));
     });
     it('should export', function () {
     });
