@@ -26,6 +26,34 @@ export default class OPMLFormat extends BaseFormat {
     return data;
   }
 
-  exportOutline(outline) {
+  exportOutline(nodes) {
+    const doc = document.implementation.createDocument("", "", null);
+
+    const opml = doc.createElement('opml');
+    opml.setAttribute('version', '2.0');
+
+    const head = doc.createElement('head');
+    // TODO: metadata!
+    opml.appendChild(head);
+
+    const body = doc.createElement('body');
+    this._exportNodes(doc, body, nodes);
+    opml.appendChild(body);
+
+    doc.appendChild(opml);
+
+    const serializer = new XMLSerializer();
+    return serializer.serializeToString(doc);
+  }
+
+  _exportNodes(doc, root, nodes) {
+    nodes.forEach(node => {
+      const outline = doc.createElement('outline');
+      outline.setAttribute('text', node.title);
+      if (node.children) {
+        this._exportNodes(doc, outline, node.children);
+      }
+      root.appendChild(outline);
+    });
   }
 }

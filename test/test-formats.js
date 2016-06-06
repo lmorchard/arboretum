@@ -32,6 +32,9 @@ describe('formats', function () {
       console.log(result);
     });
     it('should export', function () {
+      const data = [{title: 'test title'}];
+      const result = this.format.exportOutline(data);
+      console.log('export', result);
     });
   });
 

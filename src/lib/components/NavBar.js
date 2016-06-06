@@ -92,7 +92,15 @@ class NavBar extends React.Component {
     const {nodes, storage} = this.props;
     const {saveFilename} = this.state;
     if (!saveFilename) { return; }
-    const data = stringify(nodes.toJS());
+
+    let format;
+    if (saveFilename.indexOf('.opml') !== -1) {
+      format = new OPMLFormat();
+    } else {
+      format = new JSONFormat();
+    }
+    const data = format.exportOutline(nodes.toJS());
+
     this.setState({loading: true});
     storage.put(saveFilename, data).then(result => {
       this.setState({
@@ -109,6 +117,7 @@ class NavBar extends React.Component {
     if (!loadFilename) { return; }
     this.setState({loading: true});
     storage.get(loadFilename).then(result => {
+
       let format;
       if (loadFilename.indexOf('.opml') !== -1) {
         format = new OPMLFormat();
@@ -116,6 +125,7 @@ class NavBar extends React.Component {
         format = new JSONFormat();
       }
       const data = format.importContent(result);
+
       this.setState({
         loading: false,
         saveFilename: loadFilename
