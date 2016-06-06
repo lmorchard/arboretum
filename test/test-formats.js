@@ -29,8 +29,7 @@ describe('formats', function () {
     });
     it('should import', function () {
       const result = this.format.importContent(statesOPML);
-      console.log(result.querySelector('head'));
-      console.log(result.querySelector('body>outline'));
+      console.log(result);
     });
     it('should export', function () {
     });

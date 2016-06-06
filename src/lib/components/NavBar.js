@@ -1,9 +1,11 @@
 import React from 'react';
 import { connect } from 'react-redux';
 import { setFilename, loadNodes, setStorage, clearStorage } from '../actions';
-import * as storages from '../storages';
 import stringify from 'json-stringify-pretty-compact';
 import classnames from 'classnames';
+
+import * as storages from '../storages';
+import {JSONFormat, OPMLFormat} from '../formats';
 
 class NavBar extends React.Component {
   constructor(props) {
@@ -107,7 +109,13 @@ class NavBar extends React.Component {
     if (!loadFilename) { return; }
     this.setState({loading: true});
     storage.get(loadFilename).then(result => {
-      const data = JSON.parse(result);
+      let format;
+      if (loadFilename.indexOf('.opml') !== -1) {
+        format = new OPMLFormat();
+      } else {
+        format = new JSONFormat();
+      }
+      const data = format.importContent(result);
       this.setState({
         loading: false,
         saveFilename: loadFilename
