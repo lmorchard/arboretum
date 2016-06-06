@@ -7,7 +7,7 @@ An outliner made with React and Redux
 * Host in Electron for desktop?
 
 * Support multiple formats
-  * JSON
+  * <strike>JSON</strike>
   * Markdown
   * OPML
   * XOXO (HTML lists)

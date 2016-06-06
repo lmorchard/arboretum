@@ -13,9 +13,11 @@ import history from 'connect-history-api-fallback';
 
 const DEBUG = (process.env.NODE_ENV === 'development');
 
-const vendorModules = [
-  'react', 'react-dom', 'redux', 'react-redux', 'immutable', 'classnames'
+const packageJSON = require('./package.json');
+const excludeVendorModules = [
 ];
+const vendorModules = Object.keys(packageJSON.dependencies)
+  .filter(name => excludeVendorModules.indexOf(name) === -1);
 
 gulp.task('build', [
   'stylus', 'assets', 'browserify-vendor', 'browserify-app', 'browserify-tests'
@@ -74,9 +76,11 @@ gulp.task('assets', () => {
 gulp.task('connect', () => {
   connect.server({
     root: 'dist',
+    /*
     middleware: (connect, opt) => [
       history({ verbose: true })
     ],
+    */
     livereload: true,
     port: 3001
   });
@@ -88,7 +92,7 @@ gulp.task('watch', () => {
   gulp.watch('./package.json', ['browserify-vendor']);
 });
 
-gulp.task('deploy', () => {
+gulp.task('deploy', ['build'], () => {
   gulp.src('./dist/**/*')
     .pipe(deploy({}));
 });
