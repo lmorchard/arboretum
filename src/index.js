@@ -76,5 +76,5 @@ ReactDOM.render((
         <Route path="/oauth/dropbox" component={DropboxOAuthConnector} />
       </Route>
     </Router>
-  </Provider>,
+  </Provider>
 ), document.getElementById('app'));
