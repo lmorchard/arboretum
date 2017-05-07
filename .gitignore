@@ -1,0 +1,7 @@
+dist/
+dist-test/
+.publish/
+node_modules
+npm-debug.log
+.DS_Store
+*.sw?
