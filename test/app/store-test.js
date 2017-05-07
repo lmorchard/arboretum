@@ -5,7 +5,6 @@ import assert from 'assert';
 import { expect } from "chai";
 import Immutable from 'immutable';
 
-import { makeGenID } from '../../lib/utils';
 import { createInitialStore, createNode,
          positions, outlineActions } from '../../app/store';
 const { insertNode, moveNode, deleteNode } = outlineActions;
@@ -364,41 +363,18 @@ describe('app/store', () => {
 });
 
 const titlesToStore = dataIn => {
-  const genId = makeGenID();
-  const outline = { meta: {}, root: [], nodes: {} };
+  const store = createInitialStore();
   const load = (data, parent) => {
     data.forEach(item => {
-      let title, children;
-      if (Array.isArray(item)) {
-        [title, children] = item;
-      } else {
-        title = item;
-      }
-      const id = genId();
-      const node = outline.nodes[id] = {
-        id,
-        attributes: { title },
-        parent: parent ? parent.id : null,
-        children: []
-      };
-      if (parent) {
-        parent.children.push(id);
-      } else {
-        outline.root.push(id);
-      }
-      if (children) { load(children, node); }
+      const [title, children] = Array.isArray(item) ? item : [item];
+      const node = createNode({ title });
+      store.dispatch(insertNode(node, positions.ADOPT_LAST, parent));
+      if (children) { load(children, node.get('id')); }
     });
-  };
-  load(dataIn);
-  return createInitialStore({ outline });
-};
-
-const outlineState = store => store.getState().outline;
-
-const findIdByTitle = (store, title) =>
-  ( outlineState(store).get('nodes').find(v => v.getIn(['attributes', 'title']) === title) ||
-    Immutable.Map() )
-  .get('id');
+    return store;
+  }
+  return load(dataIn);
+}
 
 const storeToTitles = store => {
   const state = outlineState(store);
@@ -410,3 +386,10 @@ const storeToTitles = store => {
   }).toJS();
   return serialize(state.get('root'));
 };
+
+const outlineState = store => store.getState().outline;
+
+const findIdByTitle = (store, title) =>
+  ( outlineState(store).get('nodes').find(v => v.getIn(['attributes', 'title']) === title) ||
+    Immutable.Map() )
+  .get('id');

@@ -2,6 +2,7 @@ import Immutable from 'immutable';
 
 import { combineReducers, createStore, applyMiddleware } from 'redux';
 import { createActions, handleActions, combineActions } from 'redux-actions';
+import { createSelector } from 'reselect';
 import promiseMiddleware from 'redux-promise';
 import { createLogger } from 'redux-logger';
 
@@ -57,7 +58,7 @@ export const outlineReducers = handleActions({
 
     return state
       .updateIn(rootPath, root => root.splice(insertIdx, 0, id))
-      .update('nodes', nodes => nodes.set(id, node));
+      .update('nodes', nodes => nodes.set(id, node.set('parent', parent)));
   },
 
   MOVE_NODE: (state, { payload: { targetId, position, contextId } }) => {
@@ -70,6 +71,7 @@ export const outlineReducers = handleActions({
     const insertIdx = findInsertIdx(state, newPath, position, contextId);
 
     return state
+      .setIn(['nodes', targetId, 'parent'], parent)
       .updateIn(removePath, root => root.splice(removeIdx, 1))
       .updateIn(newPath, root => root.splice(insertIdx, 0, targetId));
   },
@@ -85,6 +87,8 @@ export const outlineReducers = handleActions({
   }
 
 }, initialData());
+
+export const getNodeById = (state, id) => state.outline.getIn(['nodes', id]);
 
 function findParentId(state, position, contextId) {
   let parent;
