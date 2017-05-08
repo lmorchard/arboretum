@@ -6,8 +6,11 @@ import { expect } from "chai";
 import Immutable from 'immutable';
 
 import { createInitialStore, createNode,
-         positions, outlineActions } from '../../app/store';
-const { insertNode, moveNode, deleteNode } = outlineActions;
+         positions, outlineActions,
+         getNodes, getRootNodes, getNodeById } from '../../app/store';
+
+const { updateNode, setNodeExpanded,
+        insertNode, moveNode, deleteNode } = outlineActions;
 
 describe('app/store', () => {
 
@@ -18,6 +21,37 @@ describe('app/store', () => {
   });
 
   describe('outline', () => {
+
+    describe('updateNode', () => {
+
+      it('supports updating attributes', () => {
+        const store = titlesToStore(['test1', 'test2', 'test3']);
+        getRootNodes(store.getState()).forEach((node, idx) => {
+          expect(node.getIn(['attributes', 'testAttr'])).to.be.undefined;
+          store.dispatch(updateNode(node.get('id'), { testAttr: `updated${idx}` }));
+        });
+        getRootNodes(store.getState()).forEach((node, idx) => {
+          expect(node.getIn(['attributes', 'testAttr'])).to.equal(`updated${idx}`);
+        });
+      });
+
+    });
+
+    describe('setNodeExpanded', () => {
+
+      it('supports setting node expansion status', () => {
+        const store = titlesToStore([
+          'test1',
+          ['test2', [ 'child1', 'child2', 'child3' ]],
+          'test3'
+        ]);
+        const nodeId = findIdByTitle(store, 'test2');
+        expect(getNodeById(store.getState(), nodeId).get('expanded')).to.be.false;
+        store.dispatch(setNodeExpanded(nodeId, true));
+        expect(getNodeById(store.getState(), nodeId).get('expanded')).to.be.true;
+      });
+
+    });
 
     describe('insertNode', () => {
 
