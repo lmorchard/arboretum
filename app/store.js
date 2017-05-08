@@ -27,7 +27,7 @@ export function createInitialStore(data) {
   );
 }
 
-export const positions = symbols('BEFORE', 'AFTER', 'ADOPT', 'ADOPT_LAST');
+export const positions = symbols('BEFORE', 'AFTER', 'ADOPT', 'ADOPT_FIRST');
 
 export const outlineActions = createActions({
 
@@ -93,7 +93,7 @@ export const getNodeById = (state, id) => state.outline.getIn(['nodes', id]);
 function findParentId(state, position, contextId) {
   let parent;
   if (contextId) {
-    if (position === positions.ADOPT || position === positions.ADOPT_LAST) {
+    if (position === positions.ADOPT || position === positions.ADOPT_FIRST) {
       parent = contextId;
     } else if (position === positions.BEFORE || position == positions.AFTER) {
       parent = state.getIn(['nodes', contextId, 'parent']);
@@ -104,9 +104,9 @@ function findParentId(state, position, contextId) {
 
 function findInsertIdx(state, rootPath, position, contextId) {
   let insertIdx;
-  if (position === positions.ADOPT) {
+  if (position === positions.ADOPT_FIRST) {
     insertIdx = 0;
-  } else if (position === positions.ADOPT_LAST) {
+  } else if (position === positions.ADOPT) {
     insertIdx = state.getIn(rootPath).count();
   } else {
     insertIdx = state.getIn(rootPath).findIndex(v => v === contextId);

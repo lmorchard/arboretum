@@ -27,7 +27,7 @@ describe('app/store', () => {
         store.dispatch(insertNode(createNode({ title: 'inserted' })));
 
         expect(storeToTitles(store))
-          .to.deep.equal(['inserted', 'test1', 'test2', 'test3']);
+          .to.deep.equal(['test1', 'test2', 'test3', 'inserted']);
       });
 
       it('supports BEFORE position at root', () => {
@@ -56,13 +56,13 @@ describe('app/store', () => {
           .to.deep.equal(['test1', 'test2', 'inserted', 'test3']);
       });
 
-      it('supports ADOPT position at root', () => {
+      it('supports ADOPT_FIRST position at root', () => {
         const store = titlesToStore(['test1', 'test2', 'test3']);
 
         ['inserted1', 'inserted2', 'inserted3'].forEach(title =>
           store.dispatch(insertNode(
             createNode({ title }),
-            positions.ADOPT,
+            positions.ADOPT_FIRST,
             findIdByTitle(store, 'test2')
           )));
 
@@ -74,13 +74,13 @@ describe('app/store', () => {
           ]);
       });
 
-      it('supports ADOPT_LAST position at root', () => {
+      it('supports ADOPT position at root', () => {
         const store = titlesToStore(['test1', 'test2', 'test3']);
 
         ['inserted1', 'inserted2', 'inserted3'].forEach(title =>
           store.dispatch(insertNode(
             createNode({ title }),
-            positions.ADOPT_LAST,
+            positions.ADOPT,
             findIdByTitle(store, 'test2')
           )));
 
@@ -138,7 +138,7 @@ describe('app/store', () => {
           ]);
       });
 
-      it('supports ADOPT position at child', () => {
+      it('supports ADOPT_FIRST position at child', () => {
         const store = titlesToStore([
           'test1',
           ['test2', [ 'child1', 'child2', 'child3' ]],
@@ -148,7 +148,7 @@ describe('app/store', () => {
         ['inserted1', 'inserted2', 'inserted3'].forEach(title =>
           store.dispatch(insertNode(
             createNode({ title }),
-            positions.ADOPT,
+            positions.ADOPT_FIRST,
             findIdByTitle(store, 'child2')
           )));
 
@@ -162,7 +162,7 @@ describe('app/store', () => {
           ]);
       });
 
-      it('supports ADOPT_LAST position at child', () => {
+      it('supports ADOPT position at child', () => {
         const store = titlesToStore([
           'test1',
           ['test2', [ 'child1', 'child2', 'child3' ]],
@@ -172,7 +172,7 @@ describe('app/store', () => {
         ['inserted1', 'inserted2', 'inserted3'].forEach(title =>
           store.dispatch(insertNode(
             createNode({ title }),
-            positions.ADOPT_LAST,
+            positions.ADOPT,
             findIdByTitle(store, 'child2')
           )));
 
@@ -216,12 +216,12 @@ describe('app/store', () => {
           .to.deep.equal(['test1', 'test3', 'test2']);
       });
 
-      it('supports ADOPT position at root', () => {
+      it('supports ADOPT_FIRST position at root', () => {
         const store = titlesToStore([['test1', ['test2']], 'test3', 'toMove']);
 
         store.dispatch(moveNode(
           findIdByTitle(store, 'toMove'),
-          positions.ADOPT,
+          positions.ADOPT_FIRST,
           findIdByTitle(store, 'test1')
         ));
 
@@ -229,12 +229,12 @@ describe('app/store', () => {
           .to.deep.equal([['test1', ['toMove', 'test2']], 'test3']);
       });
 
-      it('supports ADOPT_LAST position at root', () => {
+      it('supports ADOPT position at root', () => {
         const store = titlesToStore([['test1', ['test2']], 'test3', 'toMove']);
 
         store.dispatch(moveNode(
           findIdByTitle(store, 'toMove'),
-          positions.ADOPT_LAST,
+          positions.ADOPT,
           findIdByTitle(store, 'test1')
         ));
 
@@ -284,6 +284,27 @@ describe('app/store', () => {
         ]);
       });
 
+      it('supports ADOPT_FIRST position at child', () => {
+        const store = titlesToStore([
+          'test1',
+          ['test2', ['child1', ['child2', ['subchild1']], 'child3']],
+          'test3',
+          'toMove'
+        ]);
+
+        store.dispatch(moveNode(
+          findIdByTitle(store, 'toMove'),
+          positions.ADOPT_FIRST,
+          findIdByTitle(store, 'child2')
+        ));
+
+        expect(storeToTitles(store)).to.deep.equal([
+          'test1',
+          ['test2', ['child1', ['child2', ['toMove', 'subchild1']], 'child3']],
+          'test3'
+        ]);
+      });
+
       it('supports ADOPT position at child', () => {
         const store = titlesToStore([
           'test1',
@@ -295,27 +316,6 @@ describe('app/store', () => {
         store.dispatch(moveNode(
           findIdByTitle(store, 'toMove'),
           positions.ADOPT,
-          findIdByTitle(store, 'child2')
-        ));
-
-        expect(storeToTitles(store)).to.deep.equal([
-          'test1',
-          ['test2', ['child1', ['child2', ['toMove', 'subchild1']], 'child3']],
-          'test3'
-        ]);
-      });
-
-      it('supports ADOPT_LAST position at child', () => {
-        const store = titlesToStore([
-          'test1',
-          ['test2', ['child1', ['child2', ['subchild1']], 'child3']],
-          'test3',
-          'toMove'
-        ]);
-
-        store.dispatch(moveNode(
-          findIdByTitle(store, 'toMove'),
-          positions.ADOPT_LAST,
           findIdByTitle(store, 'child2')
         ));
 
@@ -368,7 +368,7 @@ const titlesToStore = dataIn => {
     data.forEach(item => {
       const [title, children] = Array.isArray(item) ? item : [item];
       const node = createNode({ title });
-      store.dispatch(insertNode(node, positions.ADOPT_LAST, parent));
+      store.dispatch(insertNode(node, positions.ADOPT, parent));
       if (children) { load(children, node.get('id')); }
     });
     return store;
